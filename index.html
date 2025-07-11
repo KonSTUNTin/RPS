@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тактический Камень-Ножницы-Бумага</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- React CDN -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel для JSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.5/babel.min.js"></script>
+</head>
+<body>
+   
+    <div class="game-container">
+        <!-- Заголовок -->
+        <div class="header">
+            <div class="status-lights">
+                <div class="status-light red"></div>
+                <div class="status-light green"></div>
+            </div>
+            <div class="round-counter">РАУНД <span id="round-number">1</span></div>
+        </div>
+
+        <!-- Секция врага -->
+        <div class="enemy-section">
+            <div class="enemy-title">ПРОТИВНИК</div>
+            <div class="health-bar" id="enemy-health">
+                <!-- Здоровье врага будет добавлено JS -->
+            </div>
+            <div class="triangle triangle-enemy">
+                <div class="triangle-content" id="enemy-choice">?</div>
+            </div>
+        </div>
+
+        <!-- Секция игрока -->
+        <div class="player-section">
+            <div class="select-text">выбери действие</div>
+            <div class="triangle triangle-player">
+                <div class="triangle-content" id="player-choice">?</div>
+            </div>
+            <div class="health-bar" id="player-health">
+                <!-- Здоровье игрока будет добавлено JS -->
+            </div>
+            <div class="player-title">ИГРОК</div>
+        </div>
+
+        <!-- Результат -->
+        <div class="result-section hidden" id="result-section">
+            <div class="result-text" id="result-text"></div>
+            <div class="result-details" id="result-details"></div>
+        </div>
+
+        <!-- Игровое окно -->
+        <div id="game-interface">
+            <!-- Выбор действий -->
+            <div class="choices-grid">
+                <button class="choice-btn" data-choice="rock">✊</button>
+                <button class="choice-btn" data-choice="paper">✋</button>
+                <button class="choice-btn" data-choice="scissors">✌️</button>
+            </div>
+
+            <!-- Баффы -->
+            <div class="buffs-section">
+                <div class="buffs-title">усиления (опционально)</div>
+                <div class="buffs-grid">
+                    <button class="buff-btn" data-buff="block" style="background: #ff6b6b;">Блок</button>
+                    <button class="buff-btn" data-buff="tie_damage" style="background: #4dabf7;">Ничья+</button>
+                    <button class="buff-btn" data-buff="chaos" style="background: #69db7c;">Хаос</button>
+                    <button class="buff-btn" data-buff="double" style="background: #ffd43b;">x2</button>
+                    <button class="buff-btn" data-buff="counter" style="background: #da77f2;">Контр</button>
+                    <button class="buff-btn" data-buff="shield" style="background: #74c0fc;">Щит</button>
+                    <button class="buff-btn" data-buff="rage" style="background: #f06292;">Ярость</button>
+                </div>
+                <button class="no-buff-btn" id="no-buff-btn">БЕЗ УСИЛЕНИЯ</button>
+            </div>
+
+            <!-- Кнопка хода -->
+            <button class="make-move-btn" id="make-move-btn" disabled>СДЕЛАТЬ ХОД</button>
+
+            <!-- Подсказки -->
+            <div class="hints">
+                <div class="blocked-choices hidden" id="blocked-choices"></div>
+            </div>
+        </div>
+
+        <!-- Кнопка следующего раунда -->
+        <button class="next-round-btn hidden" id="next-round-btn">СЛЕДУЮЩИЙ РАУНД</button>
+
+        <!-- Конец игры -->
+        <div class="game-over hidden" id="game-over">
+            <div class="game-over-title" id="game-over-title"></div>
+            <button class="new-game-btn" id="new-game-btn">НОВАЯ ИГРА</button>
+        </div>
+    </div>
+
+    <!-- Попап для баффов -->
+    <div class="popup-overlay hidden" id="popup-overlay">
+        <div class="popup">
+            <button class="popup-close" id="popup-close">×</button>
+            <div class="popup-title" id="popup-title"></div>
+            <div class="popup-description" id="popup-description"></div>
+            <button class="popup-apply-btn" id="popup-apply-btn">ПРИМЕНИТЬ</button>
+        </div>
+    </div>
+    <script src="./main.js" type="module"></script>
+</body>
+</html>
