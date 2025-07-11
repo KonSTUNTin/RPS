@@ -3,103 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Тактическая версия игры Камень-Ножницы-Бумага с системой баффов и усилений">
+    <meta name="keywords" content="игра, камень ножницы бумага, тактика, баффы">
     <title>Тактический Камень-Ножницы-Бумага</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- React CDN -->
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel для JSX -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.5/babel.min.js"></script>
+    <!-- Preload критических ресурсов -->
+    <link rel="preload" href="main.js" as="script">
 </head>
 <body>
-    <div class="game-container">
-        <!-- Заголовок -->
-        <div class="header" style="display: none;">
-            <div class="status-lights">
-                <div class="status-light red"></div>
-                <div class="status-light green"></div>
+    <!-- Основной контейнер игры -->
+    <main class="game-container" role="main">
+        <!-- Заголовок с информацией о раунде -->
+        <header class="header" aria-label="Информация об игре">
+            <div class="status-lights" aria-label="Индикаторы состояния">
+                <div class="status-light red" aria-label="Красный индикатор"></div>
+                <div class="status-light green" aria-label="Зеленый индикатор"></div>
             </div>
-            <div class="round-counter">РАУНД <span id="round-number">1</span></div>
-        </div>
+            <div class="round-counter" aria-live="polite">
+                РАУНД <span id="round-number">1</span>
+            </div>
+        </header>
 
-        <!-- Секция врага -->
-        <div class="enemy-section">
-            <div class="health-bar" id="enemy-health">
-                <!-- Здоровье врага будет добавлено JS -->
+        <!-- Секция противника -->
+        <section class="enemy-section" aria-label="Информация о противнике">
+            <div class="health-bar" 
+                 id="enemy-health" 
+                 aria-label="Здоровье противника"
+                 role="progressbar" 
+                 aria-valuemin="0" 
+                 aria-valuemax="10">
+                <!-- Здоровье врага генерируется JavaScript -->
             </div>
-            <div class="triangle triangle-enemy">
-                <div class="triangle-content" id="enemy-choice">?</div>
+            
+            <div class="triangle triangle-enemy" aria-label="Выбор противника">
+                <div class="triangle-content" 
+                     id="enemy-choice" 
+                     aria-live="polite"
+                     aria-label="Выбор противника">?</div>
             </div>
-        </div>
+        </section>
 
-        <!-- Информация о баффах между треугольниками -->
-        <div class="buff-info-section" id="buff-info-section">
+        <!-- Информация о выбранном баффе -->
+        <section class="buff-info-section" 
+                 id="buff-info-section" 
+                 aria-label="Информация о выбранном усилении"
+                 aria-live="polite">
             <div class="buff-info-title" id="buff-info-title"></div>
             <div class="buff-info-description" id="buff-info-description"></div>
-        </div>
+        </section>
 
         <!-- Секция игрока -->
-        <div class="player-section">
-            <div class="triangle triangle-player">
-                <div class="triangle-content" id="player-choice">?</div>
+        <section class="player-section" aria-label="Информация об игроке">
+            <div class="triangle triangle-player" aria-label="Ваш выбор">
+                <div class="triangle-content" 
+                     id="player-choice" 
+                     aria-live="polite"
+                     aria-label="Ваш выбор">?</div>
             </div>
-            <div class="health-bar" id="player-health">
-                <!-- Здоровье игрока будет добавлено JS -->
+            
+            <div class="health-bar" 
+                 id="player-health" 
+                 aria-label="Ваше здоровье"
+                 role="progressbar" 
+                 aria-valuemin="0" 
+                 aria-valuemax="10">
+                <!-- Здоровье игрока генерируется JavaScript -->
             </div>
+            
             <!-- Активные баффы игрока -->
-            <div id="player-active-buffs" class="active-buffs-container"></div>
-        </div>
+            <div id="player-active-buffs" 
+                 class="active-buffs-container" 
+                 aria-label="Активные усиления"
+                 aria-live="polite"></div>
+        </section>
 
-        <!-- Результат -->
-        <div class="result-section hidden" id="result-section">
+        <!-- Результат раунда -->
+        <section class="result-section hidden" 
+                 id="result-section" 
+                 aria-label="Результат раунда"
+                 aria-live="assertive">
             <div class="result-text" id="result-text"></div>
             <div class="result-details" id="result-details"></div>
-        </div>
+        </section>
 
-        <!-- Игровое окно -->
-        <div id="game-interface">
+        <!-- Основной игровой интерфейс -->
+        <section id="game-interface" aria-label="Игровой интерфейс">
             <!-- Выбор действий -->
-            <div class="choices-grid">
-                <button class="choice-btn" data-choice="rock">✊</button>
-                <button class="choice-btn" data-choice="paper">✋</button>
-                <button class="choice-btn" data-choice="scissors">✌️</button>
+            <div class="choices-section" aria-label="Выбор действия">
+                <div class="choices-grid" role="group" aria-label="Выберите действие">
+                    <button class="choice-btn" 
+                            data-choice="rock" 
+                            type="button"
+                            aria-label="Выбрать камень">
+                        <span aria-hidden="true">✊</span>
+                        <span class="sr-only">Камень</span>
+                    </button>
+                    <button class="choice-btn" 
+                            data-choice="paper" 
+                            type="button"
+                            aria-label="Выбрать бумагу">
+                        <span aria-hidden="true">✋</span>
+                        <span class="sr-only">Бумага</span>
+                    </button>
+                    <button class="choice-btn" 
+                            data-choice="scissors" 
+                            type="button"
+                            aria-label="Выбрать ножницы">
+                        <span aria-hidden="true">✌️</span>
+                        <span class="sr-only">Ножницы</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Баффы -->
-            <div class="buffs-section">
-                <div class="buffs-grid">
-                    <button class="buff-btn" data-buff="block" style="background: #ff6b6b;">Блок</button>
-                    <button class="buff-btn" data-buff="tie_damage" style="background: #4dabf7;">Ничья+</button>
-                    <button class="buff-btn" data-buff="chaos" style="background: #69db7c;">Хаос</button>
-                    <button class="buff-btn" data-buff="double" style="background: #ffd43b;">x2</button>
-                    <button class="buff-btn" data-buff="counter" style="background: #da77f2;">Контр</button>
-                    <button class="buff-btn" data-buff="shield" style="background: #74c0fc;">Щит</button>
-                    <button class="buff-btn" data-buff="rage" style="background: #f06292;">Ярость</button>
+            <!-- Секция баффов -->
+            <div class="buffs-section" aria-label="Усиления">
+                <div class="buffs-grid" role="group" aria-label="Выберите усиление">
+                    <button class="buff-btn" 
+                            data-buff="block" 
+                            type="button"
+                            aria-label="Блок - блокирует выбор противника">
+                        Блок
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="tie_damage" 
+                            type="button"
+                            aria-label="Ничья+ - урон при ничьей">
+                        Ничья+
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="chaos" 
+                            type="button"
+                            aria-label="Хаос - рандомизирует выборы">
+                        Хаос
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="double" 
+                            type="button"
+                            aria-label="x2 - двойной урон при победе">
+                        x2
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="counter" 
+                            type="button"
+                            aria-label="Контр - урон при поражении">
+                        Контр
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="shield" 
+                            type="button"
+                            aria-label="Щит - уменьшает получаемый урон">
+                        Щит
+                    </button>
+                    <button class="buff-btn" 
+                            data-buff="rage" 
+                            type="button"
+                            aria-label="Ярость - увеличивает наносимый урон">
+                        Ярость
+                    </button>
                 </div>
-                <button style="display: none;" class="no-buff-btn" id="no-buff-btn">БЕЗ УСИЛЕНИЯ</button>
+                
+                <button class="no-buff-btn hidden" 
+                        id="no-buff-btn" 
+                        type="button"
+                        aria-label="Играть без усиления">
+                    БЕЗ УСИЛЕНИЯ
+                </button>
             </div>
 
             <!-- Кнопка хода -->
-            <button class="make-move-btn" id="make-move-btn" disabled>СДЕЛАТЬ ХОД</button>
+            <button class="make-move-btn" 
+                    id="make-move-btn" 
+                    type="button"
+                    disabled 
+                    aria-label="Сделать ход с выбранными действием и усилением">
+                СДЕЛАТЬ ХОД
+            </button>
 
-            <!-- Подсказки -->
-            <div class="hints">
-                <div class="blocked-choices hidden" id="blocked-choices"></div>
+            <!-- Подсказки и информация -->
+            <div class="hints" aria-label="Подсказки">
+                <div class="blocked-choices hidden" 
+                     id="blocked-choices" 
+                     aria-live="polite"></div>
             </div>
-        </div>
+        </section>
 
         <!-- Кнопка следующего раунда -->
-        <button class="next-round-btn hidden" id="next-round-btn">СЛЕДУЮЩИЙ РАУНД</button>
+        <button class="next-round-btn hidden" 
+                id="next-round-btn" 
+                type="button"
+                aria-label="Перейти к следующему раунду">
+            СЛЕДУЮЩИЙ РАУНД
+        </button>
 
-        <!-- Конец игры -->
-        <div class="game-over hidden" id="game-over">
-            <div class="game-over-title" id="game-over-title"></div>
-            <button class="new-game-btn" id="new-game-btn">НОВАЯ ИГРА</button>
-        </div>
+        <!-- Экран окончания игры -->
+        <section class="game-over hidden" 
+                 id="game-over" 
+                 aria-label="Результат игры"
+                 aria-live="assertive">
+            <h1 class="game-over-title" id="game-over-title"></h1>
+            <button class="new-game-btn" 
+                    id="new-game-btn" 
+                    type="button"
+                    aria-label="Начать новую игру">
+                НОВАЯ ИГРА
+            </button>
+        </section>
+    </main>
+
+    <!-- Скрипт игры -->
+    <script src="main.js" type="module"></script>
+    
+    <!-- Скрытые элементы для скринридеров -->
+    <div class="sr-only">
+        <div id="game-status" aria-live="polite"></div>
+        <div id="health-status" aria-live="polite"></div>
     </div>
-
-    <script src="./main.js" type="module"></script>
 </body>
 </html>
