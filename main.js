@@ -1,115 +1,48 @@
-// Класс для баффов
-class Buff {
-    constructor(type, name, description, duration, config = {}) {
-      this.type = type;
-      this.name = name;
-      this.description = description;
-      this.duration = duration;
-      this.maxDuration = duration;
-      
-      // Конфигурация баффа
-      this.affectsBothPlayers = config.affectsBothPlayers || false;
-      this.isRandomEffect = config.isRandomEffect || false;
-      this.triggersOn = config.triggersOn || []; // ['win', 'lose', 'tie', 'damage_taken', 'damage_dealt']
-      this.modifies = config.modifies || {}; // { damage: 1, defense: 1, etc. }
-      this.blocksChoices = config.blocksChoices || false;
-      this.randomizesChoices = config.randomizesChoices || false;
+// Упрощенная система баффов - теперь это просто объекты с числовыми модификаторами
+const buffDefinitions = {
+    block: {
+      name: 'Блок',
+      description: 'Блокирует один случайный выбор противника в следующем раунде.',
+      duration: 1,
+      blocksEnemyChoice: true
+    },
+    tie_damage: {
+      name: 'Ничья+',
+      description: 'При ничейном результате вы наносите 1 урон противнику.',
+      duration: 2,
+      tieDamageToEnemy: 1
+    },
+    chaos: {
+      name: 'Хаос',
+      description: 'Рандомизирует выборы обеих сторон.',
+      duration: 1,
+      randomizesChoices: true
+    },
+    double: {
+      name: 'x2',
+      description: 'При победе наносите двойной урон (2 вместо 1).',
+      duration: 3,
+      winDamageMultiplier: 2
+    },
+    counter: {
+      name: 'Контр',
+      description: 'При поражении наносите 1 урон противнику.',
+      duration: 2,
+      loseDamageToEnemy: 1
+    },
+    shield: {
+      name: 'Щит',
+      description: 'Уменьшает получаемый урон на 1 (минимум 0).',
+      duration: 3,
+      damageReduction: 1
+    },
+    rage: {
+      name: 'Ярость',
+      description: 'Увеличивает наносимый урон на 1.',
+      duration: 2,
+      damageBonus: 1
     }
-    
-    // Проверяет, срабатывает ли бафф при данном условии
-    triggersOnCondition(condition) {
-      return this.triggersOn.includes(condition);
-    }
-    
-    // Применяет эффект баффа
-    applyEffect(gameState, player, condition, context = {}) {
-      let result = {
-        message: '',
-        playerDamageModifier: 0,
-        enemyDamageModifier: 0,
-        newPlayerChoice: null,
-        newEnemyChoice: null,
-        blockedChoice: null
-      };
-      
-      switch (this.type) {
-        case 'block':
-          if (condition === 'start_turn') {
-            const choices = ['rock', 'paper', 'scissors'];
-            const blockedChoice = choices[Math.floor(Math.random() * choices.length)];
-            result.blockedChoice = blockedChoice;
-            result.message = `Блок заблокировал ${gameState.choiceNames[blockedChoice]}!`;
-          }
-          break;
-          
-        case 'tie_damage':
-          if (condition === 'tie') {
-            if (player === 'player') {
-              result.enemyDamageModifier = 1;
-            } else {
-              result.playerDamageModifier = 1;
-            }
-            result.message = 'Ничья+ наносит урон!';
-          }
-          break;
-          
-        case 'chaos':
-          if (condition === 'start_turn') {
-            const choices = ['rock', 'paper', 'scissors'];
-            result.newPlayerChoice = choices[Math.floor(Math.random() * choices.length)];
-            result.newEnemyChoice = choices[Math.floor(Math.random() * choices.length)];
-            result.message = 'Хаос изменил выборы!';
-          }
-          break;
-          
-        case 'double':
-          if (condition === 'win') {
-            if (player === 'player') {
-              result.enemyDamageModifier = 1;
-            } else {
-              result.playerDamageModifier = 1;
-            }
-            result.message = 'Двойной урон!';
-          }
-          break;
-          
-        case 'counter':
-          if (condition === 'lose') {
-            if (player === 'player') {
-              result.enemyDamageModifier = 1;
-            } else {
-              result.playerDamageModifier = 1;
-            }
-            result.message = 'Контратака!';
-          }
-          break;
-          
-        case 'shield':
-          if (condition === 'damage_taken') {
-            if (player === 'player') {
-              result.playerDamageModifier = -1;
-            } else {
-              result.enemyDamageModifier = -1;
-            }
-            result.message = 'Щит защитил!';
-          }
-          break;
-          
-        case 'rage':
-          if (condition === 'damage_dealt') {
-            if (player === 'player') {
-              result.enemyDamageModifier = 1;
-            } else {
-              result.playerDamageModifier = 1;
-            }
-            result.message = 'Ярость увеличивает урон!';
-          }
-          break;
-      }
-      
-      return result;
-    }
-  }
+  };
   
   // Состояние игры
   let gameState = {
@@ -118,9 +51,8 @@ class Buff {
     enemyHealth: 10,
     playerChoice: null,
     playerBuff: null,
-    playerActiveBuffs: [], // Массив объектов Buff
+    playerActiveBuffs: [], // Массив объектов { type, name, duration, ...properties }
     enemyChoice: null,
-    enemyActiveBuffs: [], // Массив объектов Buff
     blockedChoices: [],
     round: 1,
     choiceNames: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' }
@@ -129,86 +61,6 @@ class Buff {
   // Данные игры
   const choices = ['rock', 'paper', 'scissors'];
   const choiceEmojis = { rock: '✊', paper: '✋', scissors: '✌️' };
-  
-  // Определение всех баффов через массив
-  const buffDefinitions = [
-    {
-      type: 'block',
-      name: 'Блок',
-      description: 'Блокирует один случайный выбор противника в следующем раунде. Враг не сможет использовать заблокированное действие.',
-      duration: 1,
-      config: {
-        triggersOn: ['start_turn'],
-        blocksChoices: true
-      }
-    },
-    {
-      type: 'tie_damage',
-      name: 'Ничья+',
-      description: 'При ничейном результате вы наносите 1 урон противнику. Превращает ничью в ваше преимущество.',
-      duration: 2,
-      config: {
-        triggersOn: ['tie']
-      }
-    },
-    {
-      type: 'chaos',
-      name: 'Хаос',
-      description: 'Рандомизирует выборы обеих сторон. Никто не знает, что получится - полная случайность!',
-      duration: 1,
-      config: {
-        affectsBothPlayers: true,
-        isRandomEffect: true,
-        triggersOn: ['start_turn'],
-        randomizesChoices: true
-      }
-    },
-    {
-      type: 'double',
-      name: 'x2',
-      description: 'При победе наносите двойной урон (2 вместо 1). Мощная атака для решающего удара.',
-      duration: 3,
-      config: {
-        triggersOn: ['win'],
-        modifies: { damage: 1 }
-      }
-    },
-    {
-      type: 'counter',
-      name: 'Контр',
-      description: 'При поражении наносите 1 урон противнику. Даже проигрывая, вы не остаетесь без ответа.',
-      duration: 2,
-      config: {
-        triggersOn: ['lose']
-      }
-    },
-    {
-      type: 'shield',
-      name: 'Щит',
-      description: 'Уменьшает получаемый урон на 1 (минимум 0). Надежная защита от атак противника.',
-      duration: 3,
-      config: {
-        triggersOn: ['damage_taken'],
-        modifies: { defense: 1 }
-      }
-    },
-    {
-      type: 'rage',
-      name: 'Ярость',
-      description: 'Увеличивает наносимый урон на 1. Ваши атаки становятся более разрушительными.',
-      duration: 2,
-      config: {
-        triggersOn: ['damage_dealt'],
-        modifies: { damage: 1 }
-      }
-    }
-  ];
-  
-  // Создаем объект баффов для быстрого доступа
-  const buffs = {};
-  buffDefinitions.forEach(def => {
-    buffs[def.type] = def;
-  });
   
   // Элементы DOM
   const elements = {
@@ -231,31 +83,24 @@ class Buff {
     buffInfoDescription: document.getElementById('buff-info-description')
   };
   
-  // Функция для создания баффа
-  function createBuff(buffType) {
-    const def = buffs[buffType];
-    return new Buff(def.type, def.name, def.description, def.duration, def.config);
-  }
-  
-  // Функция для добавления баффа
-  function addBuff(target, buffType) {
-    const newBuff = createBuff(buffType);
+  // Функция для добавления баффа игроку
+  function addBuffToPlayer(buffType) {
+    const buffDef = buffDefinitions[buffType];
+    if (!buffDef) return;
     
-    if (target === 'player') {
-      // Проверяем, есть ли уже такой бафф
-      const existingBuffIndex = gameState.playerActiveBuffs.findIndex(b => b.type === buffType);
-      if (existingBuffIndex >= 0) {
-        gameState.playerActiveBuffs[existingBuffIndex].duration = newBuff.duration; // Обновляем длительность
-      } else {
-        gameState.playerActiveBuffs.push(newBuff);
-      }
+    // Проверяем, есть ли уже такой бафф
+    const existingBuffIndex = gameState.playerActiveBuffs.findIndex(b => b.type === buffType);
+    if (existingBuffIndex >= 0) {
+      // Обновляем длительность существующего баффа
+      gameState.playerActiveBuffs[existingBuffIndex].duration = buffDef.duration;
     } else {
-      const existingBuffIndex = gameState.enemyActiveBuffs.findIndex(b => b.type === buffType);
-      if (existingBuffIndex >= 0) {
-        gameState.enemyActiveBuffs[existingBuffIndex].duration = newBuff.duration;
-      } else {
-        gameState.enemyActiveBuffs.push(newBuff);
-      }
+      // Добавляем новый бафф
+      gameState.playerActiveBuffs.push({
+        type: buffType,
+        name: buffDef.name,
+        duration: buffDef.duration,
+        ...buffDef // Копируем все свойства из определения
+      });
     }
   }
   
@@ -265,57 +110,18 @@ class Buff {
       buff.duration--;
       return buff.duration > 0;
     });
-    
-    gameState.enemyActiveBuffs = gameState.enemyActiveBuffs.filter(buff => {
-      buff.duration--;
-      return buff.duration > 0;
-    });
   }
   
-  // Функция для проверки наличия баффа
-  function hasBuff(target, buffType) {
-    const buffs = target === 'player' ? gameState.playerActiveBuffs : gameState.enemyActiveBuffs;
-    return buffs.some(buff => buff.type === buffType);
+  // Функция для получения суммы определенного модификатора из всех активных баффов
+  function getBuffModifier(property) {
+    return gameState.playerActiveBuffs.reduce((sum, buff) => {
+      return sum + (buff[property] || 0);
+    }, 0);
   }
   
-  // Функция для получения баффов, срабатывающих при определенном условии
-  function getBuffsTriggeredBy(target, condition) {
-    const buffs = target === 'player' ? gameState.playerActiveBuffs : gameState.enemyActiveBuffs;
-    return buffs.filter(buff => buff.triggersOnCondition(condition));
-  }
-  
-  // Функция для отображения активных баффов
-  function updateActiveBuffsDisplay() {
-    const playerBuffsContainer = document.getElementById('player-active-buffs');
-    const enemyBuffsContainer = document.getElementById('enemy-active-buffs');
-    
-    if (!playerBuffsContainer || !enemyBuffsContainer) return;
-    
-    // Очищаем контейнеры
-    playerBuffsContainer.innerHTML = '';
-    enemyBuffsContainer.innerHTML = '';
-    
-    // Отображаем баффы игрока
-    gameState.playerActiveBuffs.forEach(buff => {
-      const buffElement = document.createElement('div');
-      buffElement.className = 'active-buff';
-      buffElement.innerHTML = `
-        <span class="buff-name">${buff.name}</span>
-        <span class="buff-duration">${buff.duration}</span>
-      `;
-      playerBuffsContainer.appendChild(buffElement);
-    });
-    
-    // Отображаем баффы врага
-    gameState.enemyActiveBuffs.forEach(buff => {
-      const buffElement = document.createElement('div');
-      buffElement.className = 'active-buff';
-      buffElement.innerHTML = `
-        <span class="buff-name">${buff.name}</span>
-        <span class="buff-duration">${buff.duration}</span>
-      `;
-      enemyBuffsContainer.appendChild(buffElement);
-    });
+  // Функция для проверки наличия баффа с определенным свойством
+  function hasBuffWithProperty(property) {
+    return gameState.playerActiveBuffs.some(buff => buff[property]);
   }
   
   // Инициализация
@@ -355,7 +161,7 @@ class Buff {
   
   // Показать информацию о баффе
   function showBuffInfo(buffType) {
-    const buff = buffs[buffType];
+    const buff = buffDefinitions[buffType];
     elements.buffInfoTitle.textContent = `${buff.name} (${buff.duration} ходов)`;
     elements.buffInfoDescription.textContent = buff.description;
   }
@@ -430,7 +236,7 @@ class Buff {
   function makeMove() {
     // Применяем выбранный бафф если есть
     if (gameState.playerBuff) {
-      addBuff('player', gameState.playerBuff);
+      addBuffToPlayer(gameState.playerBuff);
       gameState.playerBuff = null;
     }
     
@@ -471,118 +277,72 @@ class Buff {
     let enemyDamage = 0;
     let resultMessages = [];
   
-    // Применяем баффы начала хода
-    const playerStartBuffs = getBuffsTriggeredBy('player', 'start_turn');
-    const enemyStartBuffs = getBuffsTriggeredBy('enemy', 'start_turn');
+    // Применяем специальные эффекты баффов
     
-    [...playerStartBuffs, ...enemyStartBuffs].forEach(buff => {
-      const player = gameState.playerActiveBuffs.includes(buff) ? 'player' : 'enemy';
-      const effect = buff.applyEffect(gameState, player, 'start_turn');
-      
-      if (effect.message) resultMessages.push(effect.message);
-      if (effect.newPlayerChoice) finalPlayerChoice = effect.newPlayerChoice;
-      if (effect.newEnemyChoice) finalEnemyChoice = effect.newEnemyChoice;
-      if (effect.blockedChoice && player === 'player') {
-        // Блокируем выбор врага
-        if (finalEnemyChoice === effect.blockedChoice) {
-          const availableChoices = choices.filter(choice => choice !== effect.blockedChoice);
-          finalEnemyChoice = availableChoices[Math.floor(Math.random() * availableChoices.length)];
-        }
+    // 1. Блокировка выбора врага
+    if (hasBuffWithProperty('blocksEnemyChoice')) {
+      const blockedChoice = choices[Math.floor(Math.random() * choices.length)];
+      if (finalEnemyChoice === blockedChoice) {
+        const availableChoices = choices.filter(choice => choice !== blockedChoice);
+        finalEnemyChoice = availableChoices[Math.floor(Math.random() * availableChoices.length)];
+        resultMessages.push(`Блок заблокировал ${gameState.choiceNames[blockedChoice]}!`);
       }
-    });
+    }
+    
+    // 2. Рандомизация выборов
+    if (hasBuffWithProperty('randomizesChoices')) {
+      finalPlayerChoice = choices[Math.floor(Math.random() * choices.length)];
+      finalEnemyChoice = choices[Math.floor(Math.random() * choices.length)];
+      resultMessages.push('Хаос изменил выборы!');
+    }
   
     const winner = getWinner(finalPlayerChoice, finalEnemyChoice);
     
-    // Базовый урон
+    // Базовый урон в зависимости от результата
     if (winner === 'tie') {
       resultMessages.push('Ничья!');
-      
-      // Применяем баффы при ничье
-      const playerTieBuffs = getBuffsTriggeredBy('player', 'tie');
-      const enemyTieBuffs = getBuffsTriggeredBy('enemy', 'tie');
-      
-      [...playerTieBuffs, ...enemyTieBuffs].forEach(buff => {
-        const player = gameState.playerActiveBuffs.includes(buff) ? 'player' : 'enemy';
-        const effect = buff.applyEffect(gameState, player, 'tie');
-        
-        if (effect.message) resultMessages.push(effect.message);
-        playerDamage += effect.playerDamageModifier;
-        enemyDamage += effect.enemyDamageModifier;
-      });
-      
+      enemyDamage += getBuffModifier('tieDamageToEnemy');
+      if (getBuffModifier('tieDamageToEnemy') > 0) {
+        resultMessages.push('Ничья+ наносит урон!');
+      }
     } else if (winner === 'player') {
       resultMessages.push('Вы победили!');
-      enemyDamage += 1;
       
-      // Применяем баффы при победе игрока
-      const playerWinBuffs = getBuffsTriggeredBy('player', 'win');
-      const enemyLoseBuffs = getBuffsTriggeredBy('enemy', 'lose');
+      // Базовый урон при победе
+      let winDamage = 1;
       
-      [...playerWinBuffs, ...enemyLoseBuffs].forEach(buff => {
-        const player = gameState.playerActiveBuffs.includes(buff) ? 'player' : 'enemy';
-        const condition = gameState.playerActiveBuffs.includes(buff) ? 'win' : 'lose';
-        const effect = buff.applyEffect(gameState, player, condition);
-        
-        if (effect.message) resultMessages.push(effect.message);
-        playerDamage += effect.playerDamageModifier;
-        enemyDamage += effect.enemyDamageModifier;
-      });
+      // Применяем множитель урона при победе
+      const winMultiplier = getBuffModifier('winDamageMultiplier');
+      if (winMultiplier > 0) {
+        winDamage = winMultiplier;
+        resultMessages.push('Двойной урон!');
+      }
       
+      // Добавляем бонус к урону
+      winDamage += getBuffModifier('damageBonus');
+      if (getBuffModifier('damageBonus') > 0) {
+        resultMessages.push('Ярость увеличивает урон!');
+      }
+      
+      enemyDamage += winDamage;
     } else {
       resultMessages.push('Враг победил!');
       playerDamage += 1;
       
-      // Применяем баффы при поражении игрока
-      const playerLoseBuffs = getBuffsTriggeredBy('player', 'lose');
-      const enemyWinBuffs = getBuffsTriggeredBy('enemy', 'win');
-      
-      [...playerLoseBuffs, ...enemyWinBuffs].forEach(buff => {
-        const player = gameState.playerActiveBuffs.includes(buff) ? 'player' : 'enemy';
-        const condition = gameState.playerActiveBuffs.includes(buff) ? 'lose' : 'win';
-        const effect = buff.applyEffect(gameState, player, condition);
-        
-        if (effect.message) resultMessages.push(effect.message);
-        playerDamage += effect.playerDamageModifier;
-        enemyDamage += effect.enemyDamageModifier;
-      });
+      // Контратака при поражении
+      enemyDamage += getBuffModifier('loseDamageToEnemy');
+      if (getBuffModifier('loseDamageToEnemy') > 0) {
+        resultMessages.push('Контратака!');
+      }
     }
   
-    // Применяем баффы при получении урона
+    // Применяем защиту от урона
     if (playerDamage > 0) {
-      const playerDefenseBuffs = getBuffsTriggeredBy('player', 'damage_taken');
-      playerDefenseBuffs.forEach(buff => {
-        const effect = buff.applyEffect(gameState, 'player', 'damage_taken');
-        if (effect.message) resultMessages.push(effect.message);
-        playerDamage += effect.playerDamageModifier;
-      });
-    }
-    
-    if (enemyDamage > 0) {
-      const enemyDefenseBuffs = getBuffsTriggeredBy('enemy', 'damage_taken');
-      enemyDefenseBuffs.forEach(buff => {
-        const effect = buff.applyEffect(gameState, 'enemy', 'damage_taken');
-        if (effect.message) resultMessages.push(effect.message);
-        enemyDamage += effect.enemyDamageModifier;
-      });
-    }
-  
-    // Применяем баффы при нанесении урона
-    if (enemyDamage > 0) {
-      const playerOffenseBuffs = getBuffsTriggeredBy('player', 'damage_dealt');
-      playerOffenseBuffs.forEach(buff => {
-        const effect = buff.applyEffect(gameState, 'player', 'damage_dealt');
-        if (effect.message) resultMessages.push(effect.message);
-        enemyDamage += effect.enemyDamageModifier;
-      });
-    }
-    
-    if (playerDamage > 0) {
-      const enemyOffenseBuffs = getBuffsTriggeredBy('enemy', 'damage_dealt');
-      enemyOffenseBuffs.forEach(buff => {
-        const effect = buff.applyEffect(gameState, 'enemy', 'damage_dealt');
-        if (effect.message) resultMessages.push(effect.message);
-        playerDamage += effect.playerDamageModifier;
-      });
+      const reduction = getBuffModifier('damageReduction');
+      if (reduction > 0) {
+        playerDamage = Math.max(0, playerDamage - reduction);
+        resultMessages.push('Щит защитил!');
+      }
     }
   
     // Применяем урон (минимум 0)
@@ -596,9 +356,8 @@ class Buff {
     elements.resultText.textContent = resultMessages.join(' ');
     
     const playerBuffsText = gameState.playerActiveBuffs.map(b => b.name).join(', ') || 'Без усилений';
-    const enemyBuffsText = gameState.enemyActiveBuffs.map(b => b.name).join(', ') || 'Без усилений';
     
-    elements.resultDetails.textContent = `Вы: ${gameState.choiceNames[finalPlayerChoice]} + ${playerBuffsText} | Враг: ${gameState.choiceNames[finalEnemyChoice]} + ${enemyBuffsText}`;
+    elements.resultDetails.textContent = `Вы: ${gameState.choiceNames[finalPlayerChoice]} + ${playerBuffsText} | Враг: ${gameState.choiceNames[finalEnemyChoice]}`;
     
     gameState.phase = 'result';
     updateDisplay();
@@ -608,6 +367,27 @@ class Buff {
     if (gameState.playerHealth <= 0 || gameState.enemyHealth <= 0) {
       showGameOver();
     }
+  }
+  
+  // Отображение активных баффов
+  function updateActiveBuffsDisplay() {
+    const playerBuffsContainer = document.getElementById('player-active-buffs');
+    
+    if (!playerBuffsContainer) return;
+    
+    // Очищаем контейнер
+    playerBuffsContainer.innerHTML = '';
+    
+    // Отображаем баффы игрока
+    gameState.playerActiveBuffs.forEach(buff => {
+      const buffElement = document.createElement('div');
+      buffElement.className = 'active-buff';
+      buffElement.innerHTML = `
+        <span class="buff-name">${buff.name}</span>
+        <span class="buff-duration">${buff.duration}</span>
+      `;
+      playerBuffsContainer.appendChild(buffElement);
+    });
   }
   
   // Показать конец игры
@@ -648,7 +428,6 @@ class Buff {
       playerBuff: null,
       playerActiveBuffs: [],
       enemyChoice: null,
-      enemyActiveBuffs: [],
       blockedChoices: [],
       round: 1,
       choiceNames: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' }

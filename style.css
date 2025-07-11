@@ -136,6 +136,43 @@ body {
     margin-top: 15px;
 }
 
+.active-buffs-container {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.active-buff {
+    background: rgba(255, 215, 0, 0.2);
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.buff-name {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.buff-duration {
+    background: #ffd700;
+    color: #000;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
 .select-text {
     font-size: 14px;
     color: #999;
