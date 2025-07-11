@@ -26,7 +26,6 @@
 
         <!-- Секция врага -->
         <div class="enemy-section">
-          
             <div class="health-bar" id="enemy-health">
                 <!-- Здоровье врага будет добавлено JS -->
             </div>
@@ -35,16 +34,20 @@
             </div>
         </div>
 
+        <!-- Информация о баффах между треугольниками -->
+        <div class="buff-info-section" id="buff-info-section">
+            <div class="buff-info-title" id="buff-info-title"></div>
+            <div class="buff-info-description" id="buff-info-description"></div>
+        </div>
+
         <!-- Секция игрока -->
         <div class="player-section">
-          
             <div class="triangle triangle-player">
                 <div class="triangle-content" id="player-choice">?</div>
             </div>
             <div class="health-bar" id="player-health">
                 <!-- Здоровье игрока будет добавлено JS -->
             </div>
-        
         </div>
 
         <!-- Результат -->
@@ -64,7 +67,6 @@
 
             <!-- Баффы -->
             <div class="buffs-section">
-               
                 <div class="buffs-grid">
                     <button class="buff-btn" data-buff="block" style="background: #ff6b6b;">Блок</button>
                     <button class="buff-btn" data-buff="tie_damage" style="background: #4dabf7;">Ничья+</button>
@@ -96,15 +98,6 @@
         </div>
     </div>
 
-    <!-- Попап для баффов -->
-    <div class="popup-overlay hidden" id="popup-overlay">
-        <div class="popup">
-            <button class="popup-close" id="popup-close">×</button>
-            <div class="popup-title" id="popup-title"></div>
-            <div class="popup-description" id="popup-description"></div>
-            <button class="popup-apply-btn" id="popup-apply-btn">ПРИМЕНИТЬ</button>
-        </div>
-    </div>
     <script src="./main.js" type="module"></script>
 </body>
 </html>

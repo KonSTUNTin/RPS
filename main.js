@@ -4,6 +4,7 @@ let gameState = {
     playerHealth: 10,
     enemyHealth: 10,
     playerChoice: null,
+    playerBuff: null,
     playerActiveBuffs: [], // Массив активных баффов с длительностью
     enemyChoice: null,
     enemyActiveBuffs: [], // Массив активных баффов врага с длительностью
@@ -54,9 +55,6 @@ let gameState = {
     }
   };
   
-  // Переменные для попапа
-  let selectedBuffForPopup = null;
-  
   // Элементы DOM
   const elements = {
     roundNumber: document.getElementById('round-number'),
@@ -73,11 +71,9 @@ let gameState = {
     gameOverTitle: document.getElementById('game-over-title'),
     makeMoveBtn: document.getElementById('make-move-btn'),
     blockedChoices: document.getElementById('blocked-choices'),
-    popupOverlay: document.getElementById('popup-overlay'),
-    popupClose: document.getElementById('popup-close'),
-    popupTitle: document.getElementById('popup-title'),
-    popupDescription: document.getElementById('popup-description'),
-    popupApplyBtn: document.getElementById('popup-apply-btn')
+    buffInfoSection: document.getElementById('buff-info-section'),
+    buffInfoTitle: document.getElementById('buff-info-title'),
+    buffInfoDescription: document.getElementById('buff-info-description')
   };
   
   // Функция для добавления баффа
@@ -166,6 +162,7 @@ let gameState = {
     updateBlockedChoices();
     updateActiveBuffsDisplay();
     updateDisplay();
+    clearBuffInfo();
   }
   
   // Обновление полосок здоровья
@@ -192,6 +189,19 @@ let gameState = {
     elements.roundNumber.textContent = gameState.round;
   }
   
+  // Показать информацию о баффе
+  function showBuffInfo(buffType) {
+    const buff = buffs[buffType];
+    elements.buffInfoTitle.textContent = `${buff.name} (${buff.duration} ходов)`;
+    elements.buffInfoDescription.textContent = buff.description;
+  }
+  
+  // Очистить информацию о баффе
+  function clearBuffInfo() {
+    elements.buffInfoTitle.textContent = '';
+    elements.buffInfoDescription.textContent = '';
+  }
+  
   // Настройка слушателей событий
   function setupEventListeners() {
     // Выбор действий
@@ -213,23 +223,28 @@ let gameState = {
         });
     });
   
-    // Выбор баффов (открытие попапа)
+    // Выбор баффов
     document.querySelectorAll('.buff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const buff = e.target.dataset.buff;
-            selectedBuffForPopup = buff;
-            showBuffPopup(buff);
+            const buffType = e.target.dataset.buff;
+            
+            // Убираем выделение с других кнопок баффов
+            document.querySelectorAll('.buff-btn').forEach(b => b.classList.remove('selected'));
+            
+            if (gameState.playerBuff === buffType) {
+                // Если уже выбран этот бафф, отменяем выбор
+                gameState.playerBuff = null;
+                clearBuffInfo();
+            } else {
+                // Выбираем новый бафф
+                gameState.playerBuff = buffType;
+                e.target.classList.add('selected');
+                showBuffInfo(buffType);
+            }
+            
+            updateMakeMoveButton();
         });
     });
-  
-    // Попап события
-    elements.popupClose.addEventListener('click', hideBuffPopup);
-    elements.popupOverlay.addEventListener('click', (e) => {
-        if (e.target === elements.popupOverlay) {
-            hideBuffPopup();
-        }
-    });
-    elements.popupApplyBtn.addEventListener('click', applyBuffFromPopup);
   
     // Кнопка хода
     elements.makeMoveBtn.addEventListener('click', makeMove);
@@ -241,28 +256,6 @@ let gameState = {
     document.getElementById('new-game-btn').addEventListener('click', newGame);
   }
   
-  // Показать попап баффа
-  function showBuffPopup(buff) {
-    elements.popupTitle.textContent = `${buffs[buff].name} (${buffs[buff].duration} ходов)`;
-    elements.popupDescription.textContent = buffs[buff].description;
-    elements.popupOverlay.classList.remove('hidden');
-  }
-  
-  // Скрыть попап баффа
-  function hideBuffPopup() {
-    elements.popupOverlay.classList.add('hidden');
-    selectedBuffForPopup = null;
-  }
-  
-  // Применить бафф из попапа
-  function applyBuffFromPopup() {
-    if (selectedBuffForPopup) {
-        addBuff('player', selectedBuffForPopup);
-        updateActiveBuffsDisplay();
-        hideBuffPopup();
-    }
-  }
-  
   // Обновление кнопки хода
   function updateMakeMoveButton() {
     const canMove = gameState.playerChoice;
@@ -271,6 +264,12 @@ let gameState = {
   
   // Сделать ход
   function makeMove() {
+    // Применяем выбранный бафф если есть
+    if (gameState.playerBuff) {
+        addBuff('player', gameState.playerBuff);
+        gameState.playerBuff = null;
+    }
+    
     gameState.phase = 'reveal';
     generateEnemyMove();
     updateDisplay();
@@ -427,6 +426,7 @@ let gameState = {
     gameState.round++;
     gameState.phase = 'selecting';
     gameState.playerChoice = null;
+    gameState.playerBuff = null;
     gameState.enemyChoice = null;
     gameState.blockedChoices = [];
     
@@ -437,6 +437,7 @@ let gameState = {
     updateDisplay();
     updateActiveBuffsDisplay();
     clearSelections();
+    clearBuffInfo();
     updateBlockedChoices();
   }
   
@@ -447,6 +448,7 @@ let gameState = {
         playerHealth: 10,
         enemyHealth: 10,
         playerChoice: null,
+        playerBuff: null,
         playerActiveBuffs: [],
         enemyChoice: null,
         enemyActiveBuffs: [],
@@ -459,6 +461,7 @@ let gameState = {
     updateDisplay();
     updateActiveBuffsDisplay();
     clearSelections();
+    clearBuffInfo();
     updateBlockedChoices();
     elements.gameOver.classList.add('hidden');
   }

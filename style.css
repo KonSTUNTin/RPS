@@ -48,7 +48,7 @@ body {
 
 .enemy-section {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .enemy-title {
@@ -100,6 +100,29 @@ body {
 
 .triangle-player .triangle-content {
     transform: none;
+}
+
+.buff-info-section {
+    text-align: center;
+    margin: 20px 0;
+    min-height: 60px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.buff-info-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 8px;
+}
+
+.buff-info-description {
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.4;
 }
 
 .player-section {
@@ -302,85 +325,4 @@ body {
 
 .hidden {
     display: none;
-}
-.popup-overlay.hidden {
-    display: none !important;
-}
-
-/* Стили для попапа */
-.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.popup {
-    background: #333;
-    border-radius: 12px;
-    padding: 25px;
-    max-width: 300px;
-    width: 90%;
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.popup-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #999;
-    font-size: 20px;
-    cursor: pointer;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s;
-}
-
-.popup-close:hover {
-    background: #555;
-    color: white;
-}
-
-.popup-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.popup-description {
-    font-size: 14px;
-    color: #ccc;
-    margin-bottom: 20px;
-    text-align: center;
-    line-height: 1.4;
-}
-
-.popup-apply-btn {
-    width: 100%;
-    padding: 12px;
-    background: #4dabf7;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.popup-apply-btn:hover {
-    background: #339af0;
 }
