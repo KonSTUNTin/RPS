@@ -15,7 +15,30 @@ const GAME_CONFIG = {
       ENEMY_BASE_HEALTH: 1,
       PLAYER_HEALTH_INCREMENT: 0.5,
       ENEMY_HEALTH_INCREMENT: 1
-    }
+    },
+    // Имена монстров с эмодзи
+    MONSTER_NAMES: [
+      { name: 'Гоблин', emoji: '👹' },
+      { name: 'Орк', emoji: '🧌' },
+      { name: 'Скелет', emoji: '💀' },
+      { name: 'Дракон', emoji: '🐉' },
+      { name: 'Демон', emoji: '😈' },
+      { name: 'Тролль', emoji: '🧟' },
+      { name: 'Вампир', emoji: '🧛' },
+      { name: 'Зомби', emoji: '🧟‍♂️' },
+      { name: 'Василиск', emoji: '🐍' },
+      { name: 'Минотавр', emoji: '🐂' },
+      { name: 'Ведьма', emoji: '🧙‍♀️' },
+      { name: 'Призрак', emoji: '👻' },
+      { name: 'Кентавр', emoji: '🏹' },
+      { name: 'Грифон', emoji: '🦅' },
+      { name: 'Химера', emoji: '🦁' },
+      { name: 'Левиафан', emoji: '🐋' },
+      { name: 'Феникс', emoji: '🔥' },
+      { name: 'Сфинкс', emoji: '🗿' },
+      { name: 'Кракен', emoji: '🐙' },
+      { name: 'Темный Лорд', emoji: '👑' }
+    ]
   };
   
   // Определения баффов
@@ -79,6 +102,13 @@ const GAME_CONFIG = {
       this.playerActiveBuffs = [];
       this.enemyChoice = null;
       this.blockedChoices = [];
+      this.currentMonster = this.getMonsterForRound(1);
+    }
+
+    // Метод для получения монстра для текущего раунда
+    getMonsterForRound(round) {
+      const monsterIndex = (round - 1) % GAME_CONFIG.MONSTER_NAMES.length;
+      return GAME_CONFIG.MONSTER_NAMES[monsterIndex];
     }
 
     // Метод для расчета здоровья на основе раунда
@@ -98,6 +128,9 @@ const GAME_CONFIG = {
       
       // Враг всегда появляется с полным здоровьем
       this.enemyHealth = this.enemyMaxHealth;
+      
+      // Обновляем текущего монстра
+      this.currentMonster = this.getMonsterForRound(this.round);
     }
 
     // Метод для продолжения текущего раунда (после хода)
@@ -198,7 +231,8 @@ const GAME_CONFIG = {
         buffInfoSection: document.getElementById('buff-info-section'),
         buffInfoTitle: document.getElementById('buff-info-title'),
         buffInfoDescription: document.getElementById('buff-info-description'),
-        playerActiveBuffs: document.getElementById('player-active-buffs')
+        playerActiveBuffs: document.getElementById('player-active-buffs'),
+        roundCounter: document.querySelector('.round-counter')
       };
     }
   
@@ -217,8 +251,16 @@ const GAME_CONFIG = {
       element.setAttribute('aria-valuenow', health);
     }
   
-    updateRoundNumber(round) {
+    updateRoundNumber(round, monster) {
       this.elements.roundNumber.textContent = round;
+      // Обновляем информацию о монстре в счетчике раундов
+      this.elements.roundCounter.innerHTML = `
+        РАУНД <span id="round-number">${round}</span>
+        <div class="monster-info">
+          <span class="monster-emoji">${monster.emoji}</span>
+          <span class="monster-name">${monster.name}</span>
+        </div>
+      `;
     }
   
     updateChoiceDisplay(playerId, choice, phase) {
@@ -299,41 +341,12 @@ const GAME_CONFIG = {
 
     // Обновленный метод для отображения информации о прогрессии
     showRoundProgression(gameState) {
-      const progressionInfo = `Противник ${gameState.round} - Ваше ❤️: ${gameState.playerHealth}/${gameState.playerMaxHealth}, Враг ❤️: ${gameState.enemyMaxHealth}`;
+      const progressionInfo = `${gameState.currentMonster.emoji} ${gameState.currentMonster.name} - Ваше ❤️: ${gameState.playerHealth}/${gameState.playerMaxHealth}, Враг ❤️: ${gameState.enemyMaxHealth}`;
       
       // Создаем временное уведомление
       const notification = document.createElement('div');
       notification.className = 'progression-notification';
       notification.textContent = progressionInfo;
-      notification.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.9);
-        color: #ffd700;
-        padding: 15px 25px;
-        border-radius: 8px;
-        border: 2px solid #ffd700;
-        font-weight: bold;
-        z-index: 1000;
-        animation: fadeInOut 2.5s ease-in-out;
-      `;
-      
-      // Добавляем CSS анимацию если её нет
-      if (!document.querySelector('#progression-animation-styles')) {
-        const style = document.createElement('style');
-        style.id = 'progression-animation-styles';
-        style.textContent = `
-          @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
       
       document.body.appendChild(notification);
       
@@ -342,6 +355,25 @@ const GAME_CONFIG = {
           notification.parentNode.removeChild(notification);
         }
       }, 2500);
+    }
+
+    showEnemyDefeated(monster) {
+      // Показываем сообщение о победе над врагом
+      const victoryMessage = document.createElement('div');
+      victoryMessage.className = 'enemy-defeated-notification';
+      victoryMessage.innerHTML = `
+        <div class="victory-emoji">🏆</div>
+        <div class="victory-title">${monster.emoji} ${monster.name} ПОБЕЖДЕН!</div>
+        <div class="victory-subtitle">Готовьтесь к следующему противнику...</div>
+      `;
+      
+      document.body.appendChild(victoryMessage);
+      
+      setTimeout(() => {
+        if (victoryMessage.parentNode) {
+          victoryMessage.parentNode.removeChild(victoryMessage);
+        }
+      }, 3000);
     }
   }
   
@@ -587,60 +619,13 @@ const GAME_CONFIG = {
     }
 
     showEnemyDefeated() {
-      // Показываем сообщение о победе над врагом
-      const victoryMessage = document.createElement('div');
-      victoryMessage.className = 'enemy-defeated-notification';
-      victoryMessage.innerHTML = `
-        <div style="font-size: 24px; margin-bottom: 10px;">🏆</div>
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">ВРАГ ПОБЕЖДЕН!</div>
-        <div style="font-size: 14px;">Готовьтесь к следующему противнику...</div>
-      `;
-      victoryMessage.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: linear-gradient(145deg, rgba(81, 207, 102, 0.95), rgba(64, 192, 87, 0.95));
-        color: white;
-        padding: 20px 30px;
-        border-radius: 12px;
-        border: 3px solid #51cf66;
-        text-align: center;
-        z-index: 1000;
-        animation: victoryPulse 3s ease-in-out;
-        box-shadow: 0 8px 32px rgba(81, 207, 102, 0.4);
-      `;
-      
-      // Добавляем CSS анимацию для победы
-      if (!document.querySelector('#victory-animation-styles')) {
-        const style = document.createElement('style');
-        style.id = 'victory-animation-styles';
-        style.textContent = `
-          @keyframes victoryPulse {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-            40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-      
-      document.body.appendChild(victoryMessage);
-      
-      setTimeout(() => {
-        if (victoryMessage.parentNode) {
-          victoryMessage.parentNode.removeChild(victoryMessage);
-        }
-      }, 3000);
+      this.domManager.showEnemyDefeated(this.gameState.currentMonster);
     }
   
     showGameOver() {
       const winner = this.gameState.getWinner();
       let title = 'ПОРАЖЕНИЕ';
-      let subtitle = `Вы дошли до противника ${this.gameState.round}`;
+      let subtitle = `Вас победил ${this.gameState.currentMonster.emoji} ${this.gameState.currentMonster.name} на раунде ${this.gameState.round}`;
       
       if (winner === 'player') {
         title = 'НЕВЕРОЯТНО!';
@@ -648,8 +633,8 @@ const GAME_CONFIG = {
       }
       
       this.domManager.elements.gameOverTitle.innerHTML = `
-        <div style="font-size: 28px; margin-bottom: 10px;">${title}</div>
-        <div style="font-size: 16px; color: #999;">${subtitle}</div>
+        <div class="game-over-main-title">${title}</div>
+        <div class="game-over-subtitle">${subtitle}</div>
       `;
       
       this.domManager.toggleVisibility('gameOver', true);
@@ -697,7 +682,7 @@ const GAME_CONFIG = {
   
     updateDisplay() {
       // Обновляем все элементы интерфейса
-      this.domManager.updateRoundNumber(this.gameState.round);
+      this.domManager.updateRoundNumber(this.gameState.round, this.gameState.currentMonster);
       this.domManager.updateHealthBar('playerHealth', this.gameState.playerHealth, this.gameState.playerMaxHealth);
       this.domManager.updateHealthBar('enemyHealth', this.gameState.enemyHealth, this.gameState.enemyMaxHealth);
       this.domManager.updateChoiceDisplay('playerChoice', this.gameState.playerChoice, this.gameState.phase);

@@ -80,9 +80,28 @@ body {
 }
 
 .round-counter {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: bold;
     color: var(--color-primary);
+    text-align: right;
+}
+
+/* === ИНФОРМАЦИЯ О МОНСТРЕ === */
+.monster-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
+    font-size: 12px;
+}
+
+.monster-emoji {
+    font-size: 16px;
+}
+
+.monster-name {
+    color: #ccc;
+    font-weight: normal;
 }
 
 /* === СЕКЦИИ ИГРОКОВ === */
@@ -495,22 +514,84 @@ body {
     border: 1px solid #444;
 }
 
-.game-over-title {
+.game-over-main-title {
     font-size: 28px;
     font-weight: bold;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: 10px;
     text-transform: uppercase;
     letter-spacing: 2px;
-}
-
-.game-over-title:contains("ПОБЕДА") {
-    color: var(--color-success);
-    text-shadow: 0 0 10px rgba(81, 207, 102, 0.5);
-}
-
-.game-over-title:contains("ПОРАЖЕНИЕ") {
     color: var(--color-danger);
     text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.game-over-subtitle {
+    font-size: 16px;
+    color: #999;
+    margin-bottom: var(--spacing-xl);
+}
+
+/* === УВЕДОМЛЕНИЯ === */
+.progression-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: var(--color-primary);
+    padding: 15px 25px;
+    border-radius: 8px;
+    border: 2px solid var(--color-primary);
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeInOut 2.5s ease-in-out;
+}
+
+.enemy-defeated-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, rgba(81, 207, 102, 0.95), rgba(64, 192, 87, 0.95));
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    border: 3px solid var(--color-success);
+    text-align: center;
+    z-index: 1000;
+    animation: victoryPulse 3s ease-in-out;
+    box-shadow: 0 8px 32px rgba(81, 207, 102, 0.4);
+}
+
+.victory-emoji {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.victory-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.victory-subtitle {
+    font-size: 14px;
+}
+
+/* === АНИМАЦИИ === */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+}
+
+@keyframes victoryPulse {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 }
 
 /* === УТИЛИТЫ === */
@@ -612,6 +693,18 @@ button:focus,
     .health-point {
         width: 20px;
         height: 20px;
+    }
+    
+    .round-counter {
+        font-size: 14px;
+    }
+    
+    .monster-info {
+        font-size: 11px;
+    }
+    
+    .monster-emoji {
+        font-size: 14px;
     }
 }
 
