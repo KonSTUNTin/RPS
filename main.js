@@ -274,9 +274,10 @@ let gameState = {
     generateEnemyMove();
     updateDisplay();
     
+    // Убираем задержку и сразу показываем результат
     setTimeout(() => {
         calculateResult();
-    }, 1500);
+    }, 500);
   }
   
   // Генерация хода врага
@@ -284,9 +285,9 @@ let gameState = {
     // Генерируем случайный выбор для врага
     gameState.enemyChoice = choices[Math.floor(Math.random() * choices.length)];
     
-    // Генерируем случайный бафф для врага
-    const randomBuff = Object.keys(buffs)[Math.floor(Math.random() * Object.keys(buffs).length)];
-    addBuff('enemy', randomBuff);
+    // ОТКЛЮЧИЛИ: Генерация случайного баффа для врага
+    // const randomBuff = Object.keys(buffs)[Math.floor(Math.random() * Object.keys(buffs).length)];
+    // addBuff('enemy', randomBuff);
   }
   
   // Определение победителя
@@ -321,15 +322,10 @@ let gameState = {
         }
     }
   
-    // Применяем блок врага - блокируем игрока в следующем раунде
-    if (hasBuff('enemy', 'block')) {
-        const blockedChoice = choices[Math.floor(Math.random() * choices.length)];
-        gameState.blockedChoices = [blockedChoice];
-        resultText += `Враг заблокирует ${choiceNames[blockedChoice]} в следующем раунде! `;
-    }
-  
+    // УБРАЛИ: Применяем блок врага - теперь у врага нет баффов
+    
     // Применяем хаос
-    if (hasBuff('player', 'chaos') || hasBuff('enemy', 'chaos')) {
+    if (hasBuff('player', 'chaos')) {
         finalPlayerChoice = choices[Math.floor(Math.random() * choices.length)];
         finalEnemyChoice = choices[Math.floor(Math.random() * choices.length)];
         resultText += 'Хаос изменил выборы! ';
@@ -343,10 +339,7 @@ let gameState = {
             enemyDamage += 1;
             resultText += 'Ничья+ наносит урон врагу! ';
         }
-        if (hasBuff('enemy', 'tie_damage')) {
-            playerDamage += 1;
-            resultText += 'Враг наносит урон при ничьей! ';
-        }
+        // УБРАЛИ: Ничья+ у врага
     } else if (winner === 'player') {
         resultText += 'Вы победили! ';
         enemyDamage += 1;
@@ -354,17 +347,11 @@ let gameState = {
             enemyDamage += 1;
             resultText += 'Двойной урон! ';
         }
-        if (hasBuff('enemy', 'counter')) {
-            playerDamage += 1;
-            resultText += 'Контратака врага! ';
-        }
+        // УБРАЛИ: Контратака врага
     } else {
         resultText += 'Враг победил! ';
         playerDamage += 1;
-        if (hasBuff('enemy', 'double')) {
-            playerDamage += 1;
-            resultText += 'Враг наносит двойной урон! ';
-        }
+        // УБРАЛИ: Двойной урон врага
         if (hasBuff('player', 'counter')) {
             enemyDamage += 1;
             resultText += 'Ваша контратака! ';
@@ -376,20 +363,14 @@ let gameState = {
         playerDamage = Math.max(0, playerDamage - 1);
         resultText += 'Щит защитил вас! ';
     }
-    if (hasBuff('enemy', 'shield') && enemyDamage > 0) {
-        enemyDamage = Math.max(0, enemyDamage - 1);
-        resultText += 'Щит защитил врага! ';
-    }
+    // УБРАЛИ: Щит врага
   
     // Применяем ярость
     if (hasBuff('player', 'rage')) {
         enemyDamage += 1;
         resultText += 'Ярость увеличивает урон! ';
     }
-    if (hasBuff('enemy', 'rage')) {
-        playerDamage += 1;
-        resultText += 'Ярость врага! ';
-    }
+    // УБРАЛИ: Ярость врага
   
     // Применяем урон
     gameState.playerHealth = Math.max(0, gameState.playerHealth - playerDamage);
@@ -399,7 +380,8 @@ let gameState = {
     elements.resultText.textContent = resultText;
     
     const playerBuffsText = gameState.playerActiveBuffs.map(b => buffs[b.type].name).join(', ') || 'Без усилений';
-    const enemyBuffsText = gameState.enemyActiveBuffs.map(b => buffs[b.type].name).join(', ') || 'Без усилений';
+    // ИЗМЕНИЛИ: Враг всегда без усилений
+    const enemyBuffsText = 'Без усилений';
     
     elements.resultDetails.textContent = `Вы: ${choiceNames[finalPlayerChoice]} + ${playerBuffsText} | Враг: ${choiceNames[finalEnemyChoice]} + ${enemyBuffsText}`;
     
