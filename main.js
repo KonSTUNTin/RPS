@@ -44,48 +44,122 @@ const GAME_CONFIG = {
   // Определения баффов
   const BUFF_DEFINITIONS = {
     block: {
+      id: 'block',
       name: 'Блок',
       description: 'Блокирует один случайный выбор противника в следующем раунде.',
       duration: 1,
-      blocksEnemyChoice: true
+      blocksEnemyChoice: true,
+      unlockRound: 1
     },
     tie_damage: {
+      id: 'tie_damage',
       name: 'Ничья+',
       description: 'При ничейном результате вы наносите 1 урон противнику.',
       duration: 2,
-      tieDamageToEnemy: 1
+      tieDamageToEnemy: 1,
+      unlockRound: 1
     },
     chaos: {
+      id: 'chaos',
       name: 'Хаос',
       description: 'Рандомизирует выборы обеих сторон.',
       duration: 1,
-      randomizesChoices: true
+      randomizesChoices: true,
+      unlockRound: 2
     },
     double: {
+      id: 'double',
       name: 'x2',
       description: 'При победе наносите двойной урон (2 вместо 1).',
       duration: 3,
-      winDamageMultiplier: 2
+      winDamageMultiplier: 2,
+      unlockRound: 3
     },
     counter: {
+      id: 'counter',
       name: 'Контр',
       description: 'При поражении наносите 1 урон противнику.',
       duration: 2,
-      loseDamageToEnemy: 1
+      loseDamageToEnemy: 1,
+      unlockRound: 2
     },
     shield: {
+      id: 'shield',
       name: 'Щит',
       description: 'Уменьшает получаемый урон на 1 (минимум 0).',
       duration: 3,
-      damageReduction: 1
+      damageReduction: 1,
+      unlockRound: 4
     },
     rage: {
+      id: 'rage',
       name: 'Ярость',
       description: 'Увеличивает наносимый урон на 1.',
       duration: 2,
-      damageBonus: 1
+      damageBonus: 1,
+      unlockRound: 3
+    },
+    // Новые баффы для демонстрации
+    freeze: {
+      id: 'freeze',
+      name: 'Заморозка',
+      description: 'Враг пропускает следующий ход.',
+      duration: 1,
+      freezesEnemy: true,
+      unlockRound: 5
+    },
+    heal: {
+      id: 'heal',
+      name: 'Исцеление',
+      description: 'Восстанавливает 1 здоровье.',
+      duration: 1,
+      healAmount: 1,
+      unlockRound: 6
     }
   };
+
+  // Класс для управления доступными баффами
+  class BuffManager {
+    static getAvailableBuffs(round) {
+      return Object.values(BUFF_DEFINITIONS).filter(buff => 
+        buff.unlockRound <= round
+      );
+    }
+
+    static addBuff(gameState, buffType) {
+      const buffDef = BUFF_DEFINITIONS[buffType];
+      if (!buffDef) return;
+      
+      const existingBuffIndex = gameState.playerActiveBuffs.findIndex(b => b.type === buffType);
+      if (existingBuffIndex >= 0) {
+        gameState.playerActiveBuffs[existingBuffIndex].duration = buffDef.duration;
+      } else {
+        gameState.playerActiveBuffs.push({
+          type: buffType,
+          name: buffDef.name,
+          duration: buffDef.duration,
+          ...buffDef
+        });
+      }
+    }
+  
+    static decreaseDuration(gameState) {
+      gameState.playerActiveBuffs = gameState.playerActiveBuffs.filter(buff => {
+        buff.duration--;
+        return buff.duration > 0;
+      });
+    }
+  
+    static getModifier(gameState, property) {
+      return gameState.playerActiveBuffs.reduce((sum, buff) => {
+        return sum + (buff[property] || 0);
+      }, 0);
+    }
+  
+    static hasProperty(gameState, property) {
+      return gameState.playerActiveBuffs.some(buff => buff[property]);
+    }
+  }
   
   // Класс для управления состоянием игры
   class GameState {
@@ -103,6 +177,7 @@ const GAME_CONFIG = {
       this.enemyChoice = null;
       this.blockedChoices = [];
       this.currentMonster = this.getMonsterForRound(1);
+      this.availableBuffs = BuffManager.getAvailableBuffs(1);
     }
 
     // Метод для получения монстра для текущего раунда
@@ -151,6 +226,8 @@ const GAME_CONFIG = {
       this.playerBuff = null;
       this.enemyChoice = null;
       this.blockedChoices = [];
+      // Обновляем доступные баффы для нового раунда
+      this.availableBuffs = BuffManager.getAvailableBuffs(this.round);
     }
 
     // Метод для восстановления здоровья игрока (при поражении или новой игре)
@@ -170,43 +247,6 @@ const GAME_CONFIG = {
       if (this.playerHealth <= 0) return 'enemy';
       if (this.enemyHealth <= 0) return 'player';
       return null;
-    }
-  }
-  
-  // Класс для управления баффами
-  class BuffManager {
-    static addBuff(gameState, buffType) {
-      const buffDef = BUFF_DEFINITIONS[buffType];
-      if (!buffDef) return;
-      
-      const existingBuffIndex = gameState.playerActiveBuffs.findIndex(b => b.type === buffType);
-      if (existingBuffIndex >= 0) {
-        gameState.playerActiveBuffs[existingBuffIndex].duration = buffDef.duration;
-      } else {
-        gameState.playerActiveBuffs.push({
-          type: buffType,
-          name: buffDef.name,
-          duration: buffDef.duration,
-          ...buffDef
-        });
-      }
-    }
-  
-    static decreaseDuration(gameState) {
-      gameState.playerActiveBuffs = gameState.playerActiveBuffs.filter(buff => {
-        buff.duration--;
-        return buff.duration > 0;
-      });
-    }
-  
-    static getModifier(gameState, property) {
-      return gameState.playerActiveBuffs.reduce((sum, buff) => {
-        return sum + (buff[property] || 0);
-      }, 0);
-    }
-  
-    static hasProperty(gameState, property) {
-      return gameState.playerActiveBuffs.some(buff => buff[property]);
     }
   }
   
@@ -232,8 +272,65 @@ const GAME_CONFIG = {
         buffInfoTitle: document.getElementById('buff-info-title'),
         buffInfoDescription: document.getElementById('buff-info-description'),
         playerActiveBuffs: document.getElementById('player-active-buffs'),
-        roundCounter: document.querySelector('.round-counter')
+        roundCounter: document.querySelector('.round-counter'),
+        buffsGrid: document.querySelector('.buffs-grid')
       };
+    }
+
+    // Новый метод для рендера баффов
+    renderBuffButtons(availableBuffs, selectedBuff = null) {
+      const buffsGrid = this.elements.buffsGrid;
+      if (!buffsGrid) return;
+
+      // Очищаем существующие кнопки
+      buffsGrid.innerHTML = '';
+
+      // Создаем кнопки для доступных баффов
+      availableBuffs.forEach(buff => {
+        const button = document.createElement('button');
+        button.className = 'buff-btn';
+        button.dataset.buff = buff.id;
+        button.type = 'button';
+        button.setAttribute('aria-label', `${buff.name} - ${buff.description}`);
+        button.textContent = buff.name;
+
+        // Добавляем класс selected если это выбранный бафф
+        if (selectedBuff === buff.id) {
+          button.classList.add('selected');
+        }
+
+        buffsGrid.appendChild(button);
+      });
+
+      // Добавляем кнопку "Без усиления" если есть доступные баффы
+      if (availableBuffs.length > 0) {
+        const noBuff = document.createElement('button');
+        noBuff.className = 'no-buff-btn';
+        noBuff.id = 'no-buff-btn';
+        noBuff.type = 'button';
+        noBuff.setAttribute('aria-label', 'Играть без усиления');
+        noBuff.textContent = 'БЕЗ УСИЛЕНИЯ';
+        
+        if (selectedBuff === null) {
+          noBuff.classList.add('selected');
+        }
+
+        buffsGrid.appendChild(noBuff);
+      }
+    }
+
+    // Метод для обновления обработчиков событий баффов
+    updateBuffEventListeners(game) {
+      // Удаляем старые обработчики и добавляем новые
+      const buffButtons = document.querySelectorAll('.buff-btn, .no-buff-btn');
+      buffButtons.forEach(btn => {
+        // Клонируем элемент чтобы удалить все обработчики
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // Добавляем новый обработчик
+        newBtn.addEventListener('click', (e) => game.handleBuffSelection(e));
+      });
     }
   
     updateHealthBar(elementId, health, maxHealth) {
@@ -277,6 +374,8 @@ const GAME_CONFIG = {
   
     showBuffInfo(buffType) {
       const buff = BUFF_DEFINITIONS[buffType];
+      if (!buff) return;
+      
       this.elements.buffInfoTitle.textContent = `${buff.name} (${buff.duration} ходов)`;
       this.elements.buffInfoDescription.textContent = buff.description;
     }
@@ -328,7 +427,7 @@ const GAME_CONFIG = {
   
     clearSelections() {
       document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
-      document.querySelectorAll('.buff-btn').forEach(btn => btn.classList.remove('selected'));
+      document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(btn => btn.classList.remove('selected'));
     }
   
     toggleVisibility(elementId, show) {
@@ -342,11 +441,16 @@ const GAME_CONFIG = {
     // Обновленный метод для отображения информации о прогрессии
     showRoundProgression(gameState) {
       const progressionInfo = `${gameState.currentMonster.emoji} ${gameState.currentMonster.name} - Ваше ❤️: ${gameState.playerHealth}/${gameState.playerMaxHealth}, Враг ❤️: ${gameState.enemyMaxHealth}`;
+      const newBuffsCount = gameState.availableBuffs.length;
+      const progressionSubtext = newBuffsCount > 0 ? ` | Доступно усилений: ${newBuffsCount}` : '';
       
       // Создаем временное уведомление
       const notification = document.createElement('div');
       notification.className = 'progression-notification';
-      notification.textContent = progressionInfo;
+      notification.innerHTML = `
+        <div>${progressionInfo}</div>
+        ${progressionSubtext ? `<div class="progression-subtext">${progressionSubtext}</div>` : ''}
+      `;
       
       document.body.appendChild(notification);
       
@@ -354,7 +458,7 @@ const GAME_CONFIG = {
         if (notification.parentNode) {
           notification.parentNode.removeChild(notification);
         }
-      }, 2500);
+      }, 3000);
     }
 
     showEnemyDefeated(monster) {
@@ -415,6 +519,13 @@ const GAME_CONFIG = {
       // Применяем урон
       gameState.playerHealth = Math.max(0, gameState.playerHealth - playerDamage);
       gameState.enemyHealth = Math.max(0, gameState.enemyHealth - enemyDamage);
+
+      // Применяем эффекты исцеления
+      const healAmount = BuffManager.getModifier(gameState, 'healAmount');
+      if (healAmount > 0) {
+        gameState.playerHealth = Math.min(gameState.playerMaxHealth, gameState.playerHealth + healAmount);
+        resultMessages.push(`Исцеление восстановило ${healAmount} здоровья!`);
+      }
   
       return {
         winner,
@@ -446,6 +557,13 @@ const GAME_CONFIG = {
         finalPlayerChoice = GAME_CONFIG.CHOICES[Math.floor(Math.random() * GAME_CONFIG.CHOICES.length)];
         finalEnemyChoice = GAME_CONFIG.CHOICES[Math.floor(Math.random() * GAME_CONFIG.CHOICES.length)];
         messages.push('Хаос изменил выборы!');
+      }
+
+      // Заморозка врага
+      if (BuffManager.hasProperty(gameState, 'freezesEnemy')) {
+        // Враг не может атаковать - сохраняет предыдущий выбор или делает слабый выбор
+        finalEnemyChoice = 'rock'; // или любой предсказуемый выбор
+        messages.push('Враг заморожен!');
       }
   
       return { playerChoice: finalPlayerChoice, enemyChoice: finalEnemyChoice, messages };
@@ -528,11 +646,6 @@ const GAME_CONFIG = {
         btn.addEventListener('click', (e) => this.handleChoiceSelection(e));
       });
   
-      // Выбор баффов
-      document.querySelectorAll('.buff-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => this.handleBuffSelection(e));
-      });
-  
       // Кнопки управления
       this.domManager.elements.makeMoveBtn.addEventListener('click', () => this.makeMove());
       this.domManager.elements.nextRoundBtn.addEventListener('click', () => this.nextRound());
@@ -556,9 +669,20 @@ const GAME_CONFIG = {
     }
   
     handleBuffSelection(e) {
+      // Обработка кнопки "Без усиления"
+      if (e.target.classList.contains('no-buff-btn')) {
+        document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
+        this.gameState.playerBuff = null;
+        this.domManager.clearBuffInfo();
+        e.target.classList.add('selected');
+        this.updateMakeMoveButton();
+        return;
+      }
+
       const buffType = e.target.dataset.buff;
+      if (!buffType) return;
       
-      document.querySelectorAll('.buff-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
       
       if (this.gameState.playerBuff === buffType) {
         this.gameState.playerBuff = null;
@@ -689,6 +813,10 @@ const GAME_CONFIG = {
       this.domManager.updateChoiceDisplay('enemyChoice', this.gameState.enemyChoice, this.gameState.phase);
       this.domManager.updateActiveBuffs(this.gameState.playerActiveBuffs);
       this.domManager.updateBlockedChoices(this.gameState.blockedChoices);
+      
+      // Рендерим доступные баффы
+      this.domManager.renderBuffButtons(this.gameState.availableBuffs, this.gameState.playerBuff);
+      this.domManager.updateBuffEventListeners(this);
       
       // Управляем видимостью секций
       const isResult = this.gameState.phase === GAME_CONFIG.PHASES.RESULT;
