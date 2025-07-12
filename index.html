@@ -117,7 +117,7 @@
         .choice-btn:disabled { border-color: #333; opacity: 0.5; cursor: not-allowed; transform: none; }
         
         .buffs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .buff-btn, .no-buff-btn { 
+        .buff-btn { 
             padding: 12px 6px; 
             background: #222; 
             border: 2px solid #666; 
@@ -129,8 +129,8 @@
             transition: all 0.3s ease; 
             text-transform: uppercase; 
         }
-        .buff-btn:hover, .no-buff-btn:hover { transform: translateY(-1px); }
-        .buff-btn.selected, .no-buff-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
+        .buff-btn:hover { transform: translateY(-1px); }
+        .buff-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
         .buff-btn[data-buff="block"] { border-color: #ff6b6b; }
         .buff-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
         .buff-btn[data-buff="chaos"] { border-color: #69db7c; }
@@ -139,7 +139,6 @@
         .buff-btn[data-buff="shield"] { border-color: #74c0fc; }
         .buff-btn[data-buff="rage"] { border-color: #f06292; }
         .buff-btn[data-buff="freeze"] { border-color: #80deea; }
-        .buff-btn[data-buff="heal"] { border-color: #a5d6a7; }
         
         .control-btn { 
             width: 100%; 
@@ -292,7 +291,7 @@
         </div>
         
         <div class="buffs-area">
-            <div class="buff-title" id="buff-title">Выберите усиление</div>
+            <div class="buff-title" id="buff-title">Активные усиления</div>
             <div class="buff-desc" id="buff-desc"></div>
             <div class="active-buffs" id="active-buffs"></div>
         </div>
@@ -328,6 +327,7 @@
             CHOICES: ['rock', 'paper', 'scissors'],
             CHOICE_NAMES: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' },
             CHOICE_ANGLES: { rock: 0, paper: 240, scissors: 120 },
+            ENEMY_CHOICE_ANGLES: { rock: 90, paper: -30, scissors: -150 },
             MONSTERS: [
                 { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, 
                 { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' }, { name: 'Тролль', emoji: '🧟' }, 
@@ -345,7 +345,7 @@
             shield: { name: 'Щит', description: 'Уменьшает получаемый урон на 1 (минимум 0).', duration: 3, damageReduction: 1, unlockRound: 4 },
             rage: { name: 'Ярость', description: 'Увеличивает наносимый урон на 1.', duration: 2, damageBonus: 1, unlockRound: 3 },
             freeze: { name: 'Заморозка', description: 'Враг пропускает следующий ход.', duration: 1, freezesEnemy: true, unlockRound: 5 },
-            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', duration: 1, healAmount: 1, unlockRound: 1 }
+            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', isHeal: true, unlockRound: 1 }
         };
 
         class Game {
@@ -357,7 +357,7 @@
             reset() {
                 this.round = 1;
                 this.playerChoice = null;
-                this.playerBuff = null;
+                this.selectedBuff = null;
                 this.playerActiveBuffs = [];
                 this.enemyChoice = null;
                 this.blockedChoices = [];
@@ -369,6 +369,7 @@
                 this.startMonsterIndex = Math.floor(Math.random() * CONFIG.MONSTERS.length);
                 this.currentMonster = CONFIG.MONSTERS[this.startMonsterIndex];
                 this.animationId = null;
+                this.battleDeck = [];
             }
 
             init() {
@@ -395,39 +396,14 @@
             }
 
             handleBuffSelection(e) {
-                if (e.target.classList.contains('no-buff-btn')) {
-                    document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
-                    this.playerBuff = null;
-                    this.clearBuffInfo();
-                    e.target.classList.add('selected');
-                    return;
-                }
                 const buffType = e.target.dataset.buff;
                 if (!buffType) return;
-                document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
-                if (this.playerBuff === buffType) {
-                    this.playerBuff = null;
-                    this.clearBuffInfo();
+                document.querySelectorAll('.buff-btn').forEach(b => b.classList.remove('selected'));
+                if (this.selectedBuff === buffType) {
+                    this.selectedBuff = null;
                 } else {
-                    this.playerBuff = buffType;
+                    this.selectedBuff = buffType;
                     e.target.classList.add('selected');
-                    this.showBuffInfo(buffType);
-                }
-            }
-
-            showBuffInfo(buffType) {
-                const buff = BUFFS[buffType];
-                if (!buff) return;
-                document.getElementById('buff-title').textContent = `${buff.name} (${buff.duration} ходов)`;
-                document.getElementById('buff-desc').textContent = buff.description;
-                document.querySelector('.buffs-area').classList.remove('hidden');
-            }
-
-            clearBuffInfo() {
-                document.getElementById('buff-title').textContent = 'Выберите усиление';
-                document.getElementById('buff-desc').textContent = '';
-                if (!this.playerBuff) {
-                    document.querySelector('.buffs-area').classList.add('hidden');
                 }
             }
 
@@ -440,26 +416,19 @@
                 
                 if (isThinking) {
                     const currentAngle = this.getCurrentAngle(arms);
-                    
-                    // Calculate how many degrees to reach target
                     let angleDiff = targetAngle - (currentAngle % 360);
                     if (angleDiff < 0) angleDiff += 360;
-                    
-                    // Add 3-5 full rotations for roulette effect
                     const extraRotations = 3 + Math.floor(Math.random() * 3);
                     const finalAngle = currentAngle + extraRotations * 360 + angleDiff;
                     
                     const startTime = Date.now();
-                    const duration = 3000; // 3 seconds for full animation
+                    const duration = 3000;
                     
                     const animate = () => {
                         const elapsed = Date.now() - startTime;
                         const progress = Math.min(elapsed / duration, 1);
-                        
-                        // Ease out cubic for smooth deceleration like a real roulette
                         const eased = 1 - Math.pow(1 - progress, 3);
                         const angle = currentAngle + (finalAngle - currentAngle) * eased;
-                        
                         arms.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
                         
                         if (progress < 1) {
@@ -480,7 +449,7 @@
                 const animate = () => {
                     const elapsed = Date.now() - startTime;
                     const progress = Math.min(elapsed / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 4); // stronger easing for roulette feel
+                    const eased = 1 - Math.pow(1 - progress, 4);
                     const currentAngle = startAngle + (targetAngle - startAngle) * eased;
                     arms.style.transform = `translate(-50%, -50%) rotate(${currentAngle}deg)`;
                     
@@ -503,21 +472,21 @@
                     document.getElementById(armsId).style.transform = 'translate(-50%, -50%) rotate(0deg)';
                     return;
                 }
-                const angle = CONFIG.CHOICE_ANGLES[choice] + (isPlayer ? -90 : 90);
+                const angles = isPlayer ? CONFIG.CHOICE_ANGLES : CONFIG.ENEMY_CHOICE_ANGLES;
+                const angle = angles[choice] + (isPlayer ? -90 : 0);
                 this.animateArms(armsId, angle);
             }
 
             makeMove() {
-                if (this.playerBuff) {
-                    this.addBuff(this.playerBuff);
-                    this.playerBuff = null;
+                if (this.selectedBuff) {
+                    this.addBuffToDeck(this.selectedBuff);
+                    this.selectedBuff = null;
                 }
                 this.phase = 'reveal';
                 this.updateDisplay();
                 
-                // Generate enemy choice first, then animate to it
                 this.generateEnemyMove();
-                this.animateArms('enemy-arms', CONFIG.CHOICE_ANGLES[this.enemyChoice], true);
+                this.animateArms('enemy-arms', CONFIG.ENEMY_CHOICE_ANGLES[this.enemyChoice], true);
                 
                 setTimeout(() => {
                     this.phase = 'result';
@@ -530,9 +499,9 @@
                 this.enemyChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
             }
 
-            addBuff(buffType) {
+            addBuffToDeck(buffType) {
                 const buff = BUFFS[buffType];
-                if (!buff) return;
+                if (!buff || buff.isHeal) return;
                 const existingIndex = this.playerActiveBuffs.findIndex(b => b.type === buffType);
                 if (existingIndex >= 0) {
                     this.playerActiveBuffs[existingIndex].duration = buff.duration;
@@ -629,19 +598,13 @@
                 this.playerHealth = Math.max(0, this.playerHealth - playerDamage);
                 this.enemyHealth = Math.max(0, this.enemyHealth - enemyDamage);
 
-                const healAmount = this.getBuffModifier('healAmount');
-                if (healAmount > 0) {
-                    this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + healAmount);
-                    messages.push(`Исцеление восстановило ${healAmount} здоровья!`);
-                }
-
                 this.phase = 'result';
                 this.updateDisplay();
                 
                 if (this.playerHealth <= 0) {
                     setTimeout(() => this.showDefeatPopup(), 1000);
                 } else if (this.enemyHealth <= 0) {
-                    setTimeout(() => this.showVictoryPopup(), 1000);
+                    setTimeout(() => this.showVictoryNotification(), 1000);
                 } else {
                     if (messages.length > 1) {
                         this.showNotification(messages.slice(1).join(' '));
@@ -656,17 +619,17 @@
                 return winConditions[choice1] === choice2 ? 'player' : 'enemy';
             }
 
-            showVictoryPopup() {
-                this.showVictoryNotification(`🏆 ${this.currentMonster.emoji} ${this.currentMonster.name} ПОБЕЖДЕН!`, 'Готовьтесь к следующему противнику...');
+            showVictoryNotification() {
+                this.showNotification(`🏆 ${this.currentMonster.emoji} ${this.currentMonster.name} ПОБЕЖДЕН!`);
                 setTimeout(() => this.showBuffSelectionPopup(), 2000);
             }
 
             showBuffSelectionPopup() {
-                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round && key !== 'heal');
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round);
                 const selectedBuffs = [];
-                while (selectedBuffs.length < 3 && selectedBuffs.length < availableBuffs.length) {
+                while (selectedBuffs.length < 3 && selectedBuffs.length < availableBuffs.filter(key => !BUFFS[key].isHeal).length) {
                     const randomBuff = availableBuffs[Math.floor(Math.random() * availableBuffs.length)];
-                    if (!selectedBuffs.includes(randomBuff)) selectedBuffs.push(randomBuff);
+                    if (!selectedBuffs.includes(randomBuff) && !BUFFS[randomBuff].isHeal) selectedBuffs.push(randomBuff);
                 }
 
                 selectedBuffs.push('heal');
@@ -675,7 +638,7 @@
                 popup.className = 'buff-selection-popup';
                 popup.innerHTML = `
                     <div class="buff-selection-content">
-                        <div class="buff-selection-title">Выберите усиление</div>
+                        <div class="buff-selection-title">Выберите награду</div>
                         <div class="buff-selection-grid">
                             ${selectedBuffs.map(buffKey => {
                                 const buff = BUFFS[buffKey];
@@ -695,7 +658,7 @@
                         if (buffType === 'heal') {
                             this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
                         } else {
-                            this.addBuff(buffType);
+                            this.battleDeck.push(buffType);
                         }
                         document.body.removeChild(popup);
                         this.nextRound();
@@ -728,18 +691,17 @@
                 
                 this.phase = 'selecting';
                 this.playerChoice = null;
-                this.playerBuff = null;
+                this.selectedBuff = null;
                 this.enemyChoice = null;
                 this.blockedChoices = [];
                 
                 this.clearSelections();
-                this.clearBuffInfo();
                 this.updateDisplay();
             }
 
             clearSelections() {
                 document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
-                document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(btn => btn.classList.remove('selected'));
+                document.querySelectorAll('.buff-btn').forEach(btn => btn.classList.remove('selected'));
                 this.rotateArms(true, null);
                 this.rotateArms(false, null);
             }
@@ -757,17 +719,15 @@
                     this.rotateArms(false, null);
                 } else if (this.phase === 'reveal') {
                     this.rotateArms(true, this.playerChoice);
-                    // Don't rotate enemy arms here - animation is already running
                 } else {
                     this.rotateArms(true, this.playerChoice);
-                    // Enemy arms already positioned by roulette animation
                 }
 
                 this.updateActiveBuffs();
                 this.updateBlockedChoices();
                 this.renderBuffButtons();
 
-                if (this.playerActiveBuffs.length === 0 && !this.playerBuff) {
+                if (this.playerActiveBuffs.length === 0) {
                     document.querySelector('.buffs-area').classList.add('hidden');
                 } else {
                     document.querySelector('.buffs-area').classList.remove('hidden');
@@ -827,35 +787,20 @@
                 const buffsGrid = document.getElementById('buffs-grid');
                 buffsGrid.innerHTML = '';
 
-                if (this.playerActiveBuffs.length === 0) return;
-
-                const availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
-                availableBuffs.forEach(buff => {
+                this.battleDeck.forEach(buffKey => {
+                    const buff = BUFFS[buffKey];
                     const button = document.createElement('button');
                     button.className = 'buff-btn';
-                    button.dataset.buff = Object.keys(BUFFS).find(key => BUFFS[key] === buff);
+                    button.dataset.buff = buffKey;
                     button.textContent = buff.name;
 
-                    if (this.playerBuff === button.dataset.buff) {
+                    if (this.selectedBuff === buffKey) {
                         button.classList.add('selected');
                     }
 
                     button.addEventListener('click', (e) => this.handleBuffSelection(e));
                     buffsGrid.appendChild(button);
                 });
-
-                if (availableBuffs.length > 0) {
-                    const noBuff = document.createElement('button');
-                    noBuff.className = 'no-buff-btn';
-                    noBuff.textContent = 'БЕЗ УСИЛЕНИЯ';
-                    
-                    if (this.playerBuff === null) {
-                        noBuff.classList.add('selected');
-                    }
-
-                    noBuff.addEventListener('click', (e) => this.handleBuffSelection(e));
-                    buffsGrid.appendChild(noBuff);
-                }
             }
 
             showNotification(text) {
@@ -864,21 +809,6 @@
                 notification.innerHTML = `
                     <div class="popup-title">Результат</div>
                     <div class="popup-text">${text}</div>
-                `;
-                document.body.appendChild(notification);
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 3000);
-            }
-
-            showVictoryNotification(title, subtitle) {
-                const notification = document.createElement('div');
-                notification.className = 'popup victory-popup';
-                notification.innerHTML = `
-                    <div class="popup-title">${title}</div>
-                    <div class="popup-text">${subtitle}</div>
                 `;
                 document.body.appendChild(notification);
                 setTimeout(() => {
