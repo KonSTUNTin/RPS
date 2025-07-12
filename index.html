@@ -3,173 +3,627 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Тактическая версия игры Камень-Ножницы-Бумага с системой баффов и усилений">
-    <meta name="keywords" content="игра, камень ножницы бумага, тактика, баффы">
     <title>Тактический Камень-Ножницы-Бумага</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Preload критических ресурсов -->
-    <link rel="preload" href="main.js" as="script">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .game-container { max-width: 400px; width: 100%; }
+        .header { display: flex; flex-flow: column; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+      
+        .round-counter { font-size: 16px; font-weight: bold; color: #ffd700; text-align: right; }
+        .monster-info { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; }
+        .monster-emoji { font-size: 16px; }
+        .monster-name { color: #ccc; }
+        .enemy-section, .player-section { text-align: center; margin-bottom: 20px; }
+        .health-bar { display: flex; justify-content: center; gap: 4px; margin-bottom: 60px; margin-top: 20px; }
+        .health-point { width: 24px; height: 24px; border-radius: 4px; transition: all 0.3s ease; }
+        .health-point.health-full { background: #ff4444; box-shadow: 0 0 4px rgba(255, 68, 68, 0.3); }
+        .health-point.health-empty { background: #444; border: 1px solid #666; }
+        
+        .choice-wheel { width: 120px; height: 120px; margin: 0 auto; position: relative; }
+        .center-emoji {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);font-size: 108px;z-index: 10;}
+        .choice-arms { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(25deg); transition: transform 0.5s ease; }
+        .choice-arm {position: absolute;width: 90px;height: 2px;background: #666;transform-origin: 0 center;}
+        .choice-arm::after {content: attr(data-emoji);position: absolute;right: -15px;top: -15px;text-align: center;transform: translate(0%, -17%) rotate(90deg);font-size: 50px;}
+        .choice-arm:nth-child(1) { transform: rotate(0deg); }
+        .choice-arm:nth-child(2) { transform: rotate(120deg); }
+        .choice-arm:nth-child(3) { transform: rotate(240deg); }
+        .choice-arms.selected-rock { transform: translate(-50%, -50%) rotate(-90deg); }
+        .choice-arms.selected-paper { transform: translate(-50%, -50%) rotate(150deg); }
+        .choice-arms.selected-scissors { transform: translate(-50%, -50%) rotate(30deg); }
+        .enemy-wheel .choice-arms.selected-rock { transform: translate(-50%, -50%) rotate(90deg); }
+        .enemy-wheel .choice-arms.selected-paper { transform: translate(-50%, -50%) rotate(-30deg); }
+        .enemy-wheel .choice-arms.selected-scissors { transform: translate(-50%, -50%) rotate(-150deg); }
+
+        .buff-info-section { text-align: center; margin: 20px 0; min-height: 60px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .buff-info-title { font-size: 16px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
+        .buff-info-description { font-size: 12px; color: #ccc; }
+        .active-buffs-container { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .active-buff { background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; border-radius: 4px; padding: 4px 8px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .buff-name { color: #ffd700; font-weight: bold; }
+        .buff-duration { background: #ffd700; color: #000; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+
+        .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .choice-btn { padding: 15px; background: linear-gradient(145deg, #666, #555); border: none; border-radius: 8px; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s ease; }
+        .choice-btn:hover { background: linear-gradient(145deg, #777, #666); transform: translateY(-2px); }
+        .choice-btn.selected { background: linear-gradient(145deg, #ffd700, #e6c200); color: #000; box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
+        .choice-btn:disabled { background: linear-gradient(145deg, #333, #222); opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .buffs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .buff-btn, .no-buff-btn { padding: 12px 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: bold; color: #000; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
+        .buff-btn:hover, .no-buff-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .buff-btn.selected, .no-buff-btn.selected { box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
+        .no-buff-btn { grid-column: 1 / -1; background: linear-gradient(145deg, #555, #444); color: white; }
+        .buff-btn[data-buff="block"] { background: linear-gradient(145deg, #ff6b6b, #e55555); }
+        .buff-btn[data-buff="tie_damage"] { background: linear-gradient(145deg, #4dabf7, #339af0); }
+        .buff-btn[data-buff="chaos"] { background: linear-gradient(145deg, #69db7c, #51cf66); }
+        .buff-btn[data-buff="double"] { background: linear-gradient(145deg, #ffd43b, #fab005); }
+        .buff-btn[data-buff="counter"] { background: linear-gradient(145deg, #da77f2, #cc5de8); }
+        .buff-btn[data-buff="shield"] { background: linear-gradient(145deg, #74c0fc, #339af0); }
+        .buff-btn[data-buff="rage"] { background: linear-gradient(145deg, #f06292, #e91e63); }
+        .buff-btn[data-buff="freeze"] { background: linear-gradient(145deg, #80deea, #4dd0e1); }
+        .buff-btn[data-buff="heal"] { background: linear-gradient(145deg, #a5d6a7, #81c784); }
+
+        .make-move-btn, .next-round-btn, .new-game-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; font-size: 14px; }
+        .make-move-btn { background: linear-gradient(145deg, #4dabf7, #339af0); }
+        .next-round-btn { background: linear-gradient(145deg, #51cf66, #40c057); }
+        .new-game-btn { background: linear-gradient(145deg, #4dabf7, #339af0); }
+        .make-move-btn:hover, .next-round-btn:hover, .new-game-btn:hover { transform: translateY(-2px); }
+        .make-move-btn:disabled { background: linear-gradient(145deg, #444, #333); opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .result-section { text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(145deg, #333, #222); border-radius: 8px; border: 1px solid #444; }
+        .result-text { font-size: 16px; margin-bottom: 10px; font-weight: bold; color: #ffd700; }
+        .result-details { font-size: 12px; color: #999; }
+
+        .blocked-choices { color: #ff4444; font-weight: bold; background: rgba(255, 68, 68, 0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(255, 68, 68, 0.3); margin-top: 15px; font-size: 12px; }
+        .game-over { text-align: center; padding: 20px; background: linear-gradient(145deg, #333, #222); border-radius: 8px; border: 1px solid #444; }
+        .game-over-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; color: #ff4444; text-shadow: 0 0 10px rgba(255, 68, 68, 0.5); }
+        .game-over-subtitle { font-size: 16px; color: #999; margin-bottom: 20px; }
+
+        .notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: #ffd700; padding: 15px 25px; border-radius: 8px; border: 2px solid #ffd700; font-weight: bold; z-index: 1000; animation: fadeInOut 2.5s ease-in-out; }
+        .victory-notification { background: linear-gradient(145deg, rgba(81, 207, 102, 0.95), rgba(64, 192, 87, 0.95)); color: white; padding: 20px 30px; border: 3px solid #51cf66; text-align: center; animation: victoryPulse 3s ease-in-out; }
+        .victory-emoji { font-size: 24px; margin-bottom: 10px; }
+        .victory-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .victory-subtitle { font-size: 14px; }
+
+        .hidden { display: none !important; }
+        .blocked::after { content: '🚫'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; background: rgba(255, 68, 68, 0.9); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+        @keyframes victoryPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+
+        @media (max-width: 480px) {
+            .choice-wheel { width: 100px; height: 100px; }
+            .center-emoji { font-size: 26px; }
+            .choice-arm::after { font-size: 16px; }
+            .buffs-grid { grid-template-columns: repeat(2, 1fr); }
+            .health-point { width: 20px; height: 20px; }
+        }
+    </style>
 </head>
 <body>
-    <!-- Основной контейнер игры -->
-    <main class="game-container" role="main">
-        <!-- Заголовок с информацией о раунде -->
-        <header class="header" aria-label="Информация об игре">
-            <div class="status-lights" aria-label="Индикаторы состояния">
-                <div class="status-light red" aria-label="Красный индикатор"></div>
-                <div class="status-light green" aria-label="Зеленый индикатор"></div>
-            </div>
-            <div class="round-counter" aria-live="polite">
-                РАУНД <span id="round-number">1</span>
-            </div>
+    <main class="game-container">
+        <header class="header">
+       
+            <div class="round-counter">РАУНД <span id="round-number">1</span></div>
         </header>
 
-        <!-- Секция противника -->
-        <section class="enemy-section" aria-label="Информация о противнике">
-            <div class="health-bar" 
-                 id="enemy-health" 
-                 aria-label="Здоровье противника"
-                 role="progressbar" 
-                 aria-valuemin="0" 
-                 aria-valuemax="10">
-                <!-- Здоровье врага генерируется JavaScript -->
-            </div>
-            
-            <div class="triangle triangle-enemy" aria-label="Выбор противника">
-                <div class="triangle-content" 
-                     id="enemy-choice" 
-                     aria-live="polite"
-                     aria-label="Выбор противника">?</div>
+        <section class="enemy-section">
+            <div class="health-bar" id="enemy-health"></div>
+            <div class="choice-wheel enemy-wheel">
+                <div class="center-emoji" id="enemy-center">👹</div>
+                <div class="choice-arms" id="enemy-arms">
+                    <div class="choice-arm" data-emoji="✊"></div>
+                    <div class="choice-arm" data-emoji="✋"></div>
+                    <div class="choice-arm" data-emoji="✌️"></div>
+                </div>
             </div>
         </section>
 
-        <!-- Информация о выбранном баффе -->
-        <section class="buff-info-section" 
-                 id="buff-info-section" 
-                 aria-label="Информация о выбранном усилении"
-                 aria-live="polite">
+        <section class="buff-info-section" id="buff-info-section">
             <div class="buff-info-title" id="buff-info-title"></div>
             <div class="buff-info-description" id="buff-info-description"></div>
         </section>
 
-        <!-- Секция игрока -->
-        <section class="player-section" aria-label="Информация об игроке">
-            <div class="triangle triangle-player" aria-label="Ваш выбор">
-                <div class="triangle-content" 
-                     id="player-choice" 
-                     aria-live="polite"
-                     aria-label="Ваш выбор">?</div>
+        <section class="player-section">
+            <div class="choice-wheel">
+                <div class="center-emoji">🌞</div>
+                <div class="choice-arms" id="player-arms">
+                    <div class="choice-arm" data-emoji="✊"></div>
+                    <div class="choice-arm" data-emoji="✋"></div>
+                    <div class="choice-arm" data-emoji="✌️"></div>
+                </div>
             </div>
-            
-            <div class="health-bar" 
-                 id="player-health" 
-                 aria-label="Ваше здоровье"
-                 role="progressbar" 
-                 aria-valuemin="0" 
-                 aria-valuemax="10">
-                <!-- Здоровье игрока генерируется JavaScript -->
-            </div>
-            
-            <!-- Активные баффы игрока -->
-            <div id="player-active-buffs" 
-                 class="active-buffs-container" 
-                 aria-label="Активные усиления"
-                 aria-live="polite"></div>
+            <div class="health-bar" id="player-health"></div>
+            <div id="player-active-buffs" class="active-buffs-container"></div>
         </section>
 
-        <!-- Результат раунда -->
-        <section class="result-section hidden" 
-                 id="result-section" 
-                 aria-label="Результат раунда"
-                 aria-live="assertive">
+        <section class="result-section hidden" id="result-section">
             <div class="result-text" id="result-text"></div>
             <div class="result-details" id="result-details"></div>
         </section>
 
-        <!-- Основной игровой интерфейс -->
-        <section id="game-interface" aria-label="Игровой интерфейс">
-            <!-- Выбор действий -->
-            <div class="choices-section" aria-label="Выбор действия">
-                <div class="choices-grid" role="group" aria-label="Выберите действие">
-                    <button class="choice-btn" 
-                            data-choice="rock" 
-                            type="button"
-                            aria-label="Выбрать камень">
-                        <span aria-hidden="true">✊</span>
-                        <span class="sr-only">Камень</span>
-                    </button>
-                    <button class="choice-btn" 
-                            data-choice="paper" 
-                            type="button"
-                            aria-label="Выбрать бумагу">
-                        <span aria-hidden="true">✋</span>
-                        <span class="sr-only">Бумага</span>
-                    </button>
-                    <button class="choice-btn" 
-                            data-choice="scissors" 
-                            type="button"
-                            aria-label="Выбрать ножницы">
-                        <span aria-hidden="true">✌️</span>
-                        <span class="sr-only">Ножницы</span>
-                    </button>
-                </div>
+        <section id="game-interface">
+            <div class="choices-grid">
+                <button class="choice-btn" data-choice="rock">✊</button>
+                <button class="choice-btn" data-choice="paper">✋</button>
+                <button class="choice-btn" data-choice="scissors">✌️</button>
             </div>
-
-            <!-- Секция баффов - теперь генерируется динамически -->
-            <div class="buffs-section" aria-label="Усиления">
-                <div class="buffs-grid" role="group" aria-label="Выберите усиление">
-                    <!-- Кнопки баффов генерируются JavaScript -->
-                </div>
+            <div class="buffs-section">
+                <div class="buffs-grid" id="buffs-grid"></div>
             </div>
-
-            <!-- Кнопка хода -->
-            <button class="make-move-btn" 
-                    id="make-move-btn" 
-                    type="button"
-                    disabled 
-                    aria-label="Сделать ход с выбранными действием и усилением">
-                СДЕЛАТЬ ХОД
-            </button>
-
-            <!-- Подсказки и информация -->
-            <div class="hints" aria-label="Подсказки">
-                <div class="blocked-choices hidden" 
-                     id="blocked-choices" 
-                     aria-live="polite"></div>
-            </div>
+            <button class="make-move-btn" id="make-move-btn" disabled>СДЕЛАТЬ ХОД</button>
+            <div class="blocked-choices hidden" id="blocked-choices"></div>
         </section>
 
-        <!-- Кнопка следующего раунда -->
-        <button class="next-round-btn hidden" 
-                id="next-round-btn" 
-                type="button"
-                aria-label="Перейти к следующему раунду">
-            СЛЕДУЮЩИЙ РАУНД
-        </button>
+        <button class="next-round-btn hidden" id="next-round-btn">СЛЕДУЮЩИЙ РАУНД</button>
 
-        <!-- Экран окончания игры -->
-        <section class="game-over hidden" 
-                 id="game-over" 
-                 aria-label="Результат игры"
-                 aria-live="assertive">
-            <h1 class="game-over-title" id="game-over-title"></h1>
-            <button class="new-game-btn" 
-                    id="new-game-btn" 
-                    type="button"
-                    aria-label="Начать новую игру">
-                НОВАЯ ИГРА
-            </button>
+        <section class="game-over hidden" id="game-over">
+            <div id="game-over-title"></div>
+            <button class="new-game-btn" id="new-game-btn">НОВАЯ ИГРА</button>
         </section>
     </main>
 
-    <!-- Скрипт игры -->
-    <script src="main.js" type="module"></script>
-    
-    <!-- Скрытые элементы для скринридеров -->
-    <div class="sr-only">
-        <div id="game-status" aria-live="polite"></div>
-        <div id="health-status" aria-live="polite"></div>
-    </div>
+    <script>
+        const CONFIG = {
+            MAX_HEALTH: 10,
+            CHOICES: ['rock', 'paper', 'scissors'],
+            CHOICE_EMOJIS: { rock: '✊', paper: '✋', scissors: '✌️' },
+            CHOICE_NAMES: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' },
+            PROGRESSION: { PLAYER_BASE_HEALTH: 3, ENEMY_BASE_HEALTH: 1, PLAYER_HEALTH_INCREMENT: 0.5, ENEMY_HEALTH_INCREMENT: 1 },
+            MONSTERS: [
+                { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' },
+                { name: 'Тролль', emoji: '🧟' }, { name: 'Вампир', emoji: '🧛' }, { name: 'Зомби', emoji: '🧟‍♂️' }, { name: 'Василиск', emoji: '🐍' }, { name: 'Минотавр', emoji: '🐂' }
+            ]
+        };
+
+        const BUFFS = {
+            block: { name: 'Блок', description: 'Блокирует один случайный выбор противника в следующем раунде.', duration: 1, blocksEnemyChoice: true, unlockRound: 1 },
+            tie_damage: { name: 'Ничья+', description: 'При ничейном результате вы наносите 1 урон противнику.', duration: 2, tieDamageToEnemy: 1, unlockRound: 1 },
+            chaos: { name: 'Хаос', description: 'Рандомизирует выборы обеих сторон.', duration: 1, randomizesChoices: true, unlockRound: 2 },
+            double: { name: 'x2', description: 'При победе наносите двойной урон (2 вместо 1).', duration: 3, winDamageMultiplier: 2, unlockRound: 3 },
+            counter: { name: 'Контр', description: 'При поражении наносите 1 урон противнику.', duration: 2, loseDamageToEnemy: 1, unlockRound: 2 },
+            shield: { name: 'Щит', description: 'Уменьшает получаемый урон на 1 (минимум 0).', duration: 3, damageReduction: 1, unlockRound: 4 },
+            rage: { name: 'Ярость', description: 'Увеличивает наносимый урон на 1.', duration: 2, damageBonus: 1, unlockRound: 3 },
+            freeze: { name: 'Заморозка', description: 'Враг пропускает следующий ход.', duration: 1, freezesEnemy: true, unlockRound: 5 },
+            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', duration: 1, healAmount: 1, unlockRound: 6 }
+        };
+
+        class Game {
+            constructor() {
+                this.reset();
+                this.init();
+            }
+
+            reset() {
+                this.round = 1;
+                this.playerChoice = null;
+                this.playerBuff = null;
+                this.playerActiveBuffs = [];
+                this.enemyChoice = null;
+                this.blockedChoices = [];
+                this.phase = 'selecting';
+                this.updateHealthForRound();
+                this.currentMonster = CONFIG.MONSTERS[(this.round - 1) % CONFIG.MONSTERS.length];
+                this.availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
+            }
+
+            updateHealthForRound() {
+                this.playerMaxHealth = Math.round(CONFIG.PROGRESSION.PLAYER_BASE_HEALTH + (this.round - 1) * CONFIG.PROGRESSION.PLAYER_HEALTH_INCREMENT);
+                this.enemyMaxHealth = CONFIG.PROGRESSION.ENEMY_BASE_HEALTH + (this.round - 1) * CONFIG.PROGRESSION.ENEMY_HEALTH_INCREMENT;
+                if (this.playerHealth === undefined) this.playerHealth = this.playerMaxHealth;
+                this.enemyHealth = this.enemyMaxHealth;
+                this.currentMonster = CONFIG.MONSTERS[(this.round - 1) % CONFIG.MONSTERS.length];
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateDisplay();
+                setTimeout(() => this.showNotification(`${this.currentMonster.emoji} ${this.currentMonster.name} - Ваше ❤️: ${this.playerHealth}/${this.playerMaxHealth}, Враг ❤️: ${this.enemyMaxHealth}`), 500);
+            }
+
+            setupEventListeners() {
+                document.querySelectorAll('.choice-btn').forEach(btn => btn.addEventListener('click', (e) => this.handleChoiceSelection(e)));
+                document.getElementById('make-move-btn').addEventListener('click', () => this.makeMove());
+                document.getElementById('next-round-btn').addEventListener('click', () => this.nextRound());
+                document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
+            }
+
+            handleChoiceSelection(e) {
+                const choice = e.target.dataset.choice;
+                if (this.blockedChoices.includes(choice)) return;
+                document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+                if (this.playerChoice === choice) {
+                    this.playerChoice = null;
+                } else {
+                    this.playerChoice = choice;
+                    e.target.classList.add('selected');
+                }
+                this.updateDisplay();
+            }
+
+            handleBuffSelection(e) {
+                if (e.target.classList.contains('no-buff-btn')) {
+                    document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
+                    this.playerBuff = null;
+                    this.clearBuffInfo();
+                    e.target.classList.add('selected');
+                    return;
+                }
+                const buffType = e.target.dataset.buff;
+                if (!buffType) return;
+                document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(b => b.classList.remove('selected'));
+                if (this.playerBuff === buffType) {
+                    this.playerBuff = null;
+                    this.clearBuffInfo();
+                } else {
+                    this.playerBuff = buffType;
+                    e.target.classList.add('selected');
+                    this.showBuffInfo(buffType);
+                }
+            }
+
+            showBuffInfo(buffType) {
+                const buff = BUFFS[buffType];
+                if (!buff) return;
+                document.getElementById('buff-info-title').textContent = `${buff.name} (${buff.duration} ходов)`;
+                document.getElementById('buff-info-description').textContent = buff.description;
+            }
+
+            clearBuffInfo() {
+                document.getElementById('buff-info-title').textContent = '';
+                document.getElementById('buff-info-description').textContent = '';
+            }
+
+            rotateArms(isPlayer, choice) {
+                const armsId = isPlayer ? 'player-arms' : 'enemy-arms';
+                const arms = document.getElementById(armsId);
+                if (!choice) {
+                    arms.className = 'choice-arms';
+                    return;
+                }
+                arms.className = `choice-arms selected-${choice}`;
+            }
+
+            makeMove() {
+                if (this.playerBuff) {
+                    this.addBuff(this.playerBuff);
+                    this.playerBuff = null;
+                }
+                this.phase = 'reveal';
+                this.updateDisplay();
+                setTimeout(() => {
+                    this.generateEnemyMove();
+                    this.updateDisplay();
+                    setTimeout(() => this.resolveRound(), 500);
+                }, 2000);
+            }
+
+            generateEnemyMove() {
+                this.enemyChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
+            }
+
+            addBuff(buffType) {
+                const buff = BUFFS[buffType];
+                if (!buff) return;
+                const existingIndex = this.playerActiveBuffs.findIndex(b => b.type === buffType);
+                if (existingIndex >= 0) {
+                    this.playerActiveBuffs[existingIndex].duration = buff.duration;
+                } else {
+                    this.playerActiveBuffs.push({ type: buffType, name: buff.name, duration: buff.duration, ...buff });
+                }
+            }
+
+            decreaseBuffDurations() {
+                this.playerActiveBuffs = this.playerActiveBuffs.filter(buff => {
+                    buff.duration--;
+                    return buff.duration > 0;
+                });
+            }
+
+            getBuffModifier(property) {
+                return this.playerActiveBuffs.reduce((sum, buff) => sum + (buff[property] || 0), 0);
+            }
+
+            hasBuffProperty(property) {
+                return this.playerActiveBuffs.some(buff => buff[property]);
+            }
+
+            resolveRound() {
+                let finalPlayerChoice = this.playerChoice, finalEnemyChoice = this.enemyChoice, messages = [];
+                
+                if (this.hasBuffProperty('blocksEnemyChoice')) {
+                    const blockedChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
+                    if (finalEnemyChoice === blockedChoice) {
+                        const availableChoices = CONFIG.CHOICES.filter(choice => choice !== blockedChoice);
+                        finalEnemyChoice = availableChoices[Math.floor(Math.random() * availableChoices.length)];
+                        messages.push(`Блок заблокировал ${CONFIG.CHOICE_NAMES[blockedChoice]}!`);
+                    }
+                }
+                
+                if (this.hasBuffProperty('randomizesChoices')) {
+                    finalPlayerChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
+                    finalEnemyChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
+                    messages.push('Хаос изменил выборы!');
+                }
+
+                if (this.hasBuffProperty('freezesEnemy')) {
+                    finalEnemyChoice = 'rock';
+                    messages.push('Враг заморожен!');
+                }
+
+                const winner = this.getWinner(finalPlayerChoice, finalEnemyChoice);
+                let playerDamage = 0, enemyDamage = 0;
+
+                if (winner === 'tie') {
+                    messages.push('Ничья!');
+                    enemyDamage += this.getBuffModifier('tieDamageToEnemy');
+                    if (this.getBuffModifier('tieDamageToEnemy') > 0) messages.push('Ничья+ наносит урон!');
+                } else if (winner === 'player') {
+                    messages.push('Вы победили!');
+                    let winDamage = 1;
+                    const winMultiplier = this.getBuffModifier('winDamageMultiplier');
+                    if (winMultiplier > 0) {
+                        winDamage = winMultiplier;
+                        messages.push('Двойной урон!');
+                    }
+                    winDamage += this.getBuffModifier('damageBonus');
+                    if (this.getBuffModifier('damageBonus') > 0) messages.push('Ярость увеличивает урон!');
+                    enemyDamage += winDamage;
+                } else {
+                    messages.push('Враг победил!');
+                    playerDamage += 1;
+                    enemyDamage += this.getBuffModifier('loseDamageToEnemy');
+                    if (this.getBuffModifier('loseDamageToEnemy') > 0) messages.push('Контратака!');
+                }
+
+                if (playerDamage > 0) {
+                    const reduction = this.getBuffModifier('damageReduction');
+                    if (reduction > 0) {
+                        playerDamage = Math.max(0, playerDamage - reduction);
+                        messages.push('Щит защитил!');
+                    }
+                }
+
+                this.playerHealth = Math.max(0, this.playerHealth - playerDamage);
+                this.enemyHealth = Math.max(0, this.enemyHealth - enemyDamage);
+
+                const healAmount = this.getBuffModifier('healAmount');
+                if (healAmount > 0) {
+                    this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + healAmount);
+                    messages.push(`Исцеление восстановило ${healAmount} здоровья!`);
+                }
+
+                document.getElementById('result-text').textContent = messages.join(' ');
+                const playerBuffsText = this.playerActiveBuffs.map(b => b.name).join(', ') || 'Без усилений';
+                document.getElementById('result-details').textContent = `Вы: ${CONFIG.CHOICE_NAMES[finalPlayerChoice]} + ${playerBuffsText} | Враг: ${CONFIG.CHOICE_NAMES[finalEnemyChoice]}`;
+                
+                this.phase = 'result';
+                this.updateDisplay();
+                
+                if (this.playerHealth <= 0) this.showGameOver();
+                else if (this.enemyHealth <= 0) this.showEnemyDefeated();
+            }
+
+            getWinner(choice1, choice2) {
+                if (choice1 === choice2) return 'tie';
+                const winConditions = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+                return winConditions[choice1] === choice2 ? 'player' : 'enemy';
+            }
+
+            showEnemyDefeated() {
+                this.showVictoryNotification(`🏆 ${this.currentMonster.emoji} ${this.currentMonster.name} ПОБЕЖДЕН!`, 'Готовьтесь к следующему противнику...');
+            }
+
+            showGameOver() {
+                const title = this.playerHealth <= 0 ? 'ПОРАЖЕНИЕ' : 'НЕВЕРОЯТНО!';
+                const subtitle = this.playerHealth <= 0 ? 
+                    `Вас победил ${this.currentMonster.emoji} ${this.currentMonster.name} на раунде ${this.round}` :
+                    'Все враги побеждены!';
+                
+                document.getElementById('game-over-title').innerHTML = `
+                    <div class="game-over-title">${title}</div>
+                    <div class="game-over-subtitle">${subtitle}</div>
+                `;
+                
+                document.getElementById('game-over').classList.remove('hidden');
+                document.getElementById('game-interface').classList.add('hidden');
+                document.getElementById('next-round-btn').classList.add('hidden');
+            }
+
+            nextRound() {
+                if (this.enemyHealth <= 0) {
+                    this.decreaseBuffDurations();
+                    this.round++;
+                    this.updateHealthForRound();
+                    this.availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
+                    setTimeout(() => {
+                        this.showNotification(`${this.currentMonster.emoji} ${this.currentMonster.name} - Ваше ❤️: ${this.playerHealth}/${this.playerMaxHealth}, Враг ❤️: ${this.enemyMaxHealth}`);
+                    }, 300);
+                } else {
+                    this.decreaseBuffDurations();
+                }
+                
+                this.phase = 'selecting';
+                this.playerChoice = null;
+                this.playerBuff = null;
+                this.enemyChoice = null;
+                this.blockedChoices = [];
+                
+                this.clearSelections();
+                this.clearBuffInfo();
+                this.updateDisplay();
+            }
+
+            newGame() {
+                this.reset();
+                this.clearSelections();
+                this.clearBuffInfo();
+                document.getElementById('game-over').classList.add('hidden');
+                this.updateDisplay();
+                setTimeout(() => {
+                    this.showNotification(`${this.currentMonster.emoji} ${this.currentMonster.name} - Ваше ❤️: ${this.playerHealth}/${this.playerMaxHealth}, Враг ❤️: ${this.enemyMaxHealth}`);
+                }, 500);
+            }
+
+            clearSelections() {
+                document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
+                document.querySelectorAll('.buff-btn, .no-buff-btn').forEach(btn => btn.classList.remove('selected'));
+                this.rotateArms(true, null);
+                this.rotateArms(false, null);
+            }
+
+            updateDisplay() {
+                document.getElementById('round-number').textContent = this.round;
+                document.querySelector('.round-counter').innerHTML = `
+                    РАУНД <span id="round-number">${this.round}</span>
+                    <div class="monster-info">
+                        <span class="monster-emoji">${this.currentMonster.emoji}</span>
+                        <span class="monster-name">${this.currentMonster.name}</span>
+                    </div>
+                `;
+
+                document.getElementById('enemy-center').textContent = this.currentMonster.emoji;
+
+                this.updateHealthBar('player-health', this.playerHealth, this.playerMaxHealth);
+                this.updateHealthBar('enemy-health', this.enemyHealth, this.enemyMaxHealth);
+
+                if (this.phase === 'selecting') {
+                    this.rotateArms(true, this.playerChoice);
+                    this.rotateArms(false, null);
+                } else if (this.phase === 'reveal') {
+                    this.rotateArms(true, this.playerChoice);
+                    this.rotateArms(false, null);
+                } else {
+                    this.rotateArms(true, this.playerChoice);
+                    this.rotateArms(false, this.enemyChoice);
+                }
+
+                this.updateActiveBuffs();
+                this.updateBlockedChoices();
+                this.renderBuffButtons();
+
+                const isResult = this.phase === 'result';
+                const canContinue = this.playerHealth > 0;
+                
+                document.getElementById('result-section').classList.toggle('hidden', !isResult);
+                document.getElementById('game-interface').classList.toggle('hidden', isResult);
+                document.getElementById('next-round-btn').classList.toggle('hidden', !isResult || !canContinue);
+
+                document.getElementById('make-move-btn').disabled = !this.playerChoice;
+            }
+
+            updateHealthBar(elementId, health, maxHealth) {
+                const element = document.getElementById(elementId);
+                element.innerHTML = '';
+                for (let i = 0; i < maxHealth; i++) {
+                    const healthPoint = document.createElement('div');
+                    healthPoint.className = `health-point ${i < health ? 'health-full' : 'health-empty'}`;
+                    element.appendChild(healthPoint);
+                }
+            }
+
+            updateActiveBuffs() {
+                const container = document.getElementById('player-active-buffs');
+                container.innerHTML = '';
+                this.playerActiveBuffs.forEach(buff => {
+                    const buffElement = document.createElement('div');
+                    buffElement.className = 'active-buff';
+                    buffElement.innerHTML = `
+                        <span class="buff-name">${buff.name}</span>
+                        <span class="buff-duration">${buff.duration}</span>
+                    `;
+                    container.appendChild(buffElement);
+                });
+            }
+
+            updateBlockedChoices() {
+                document.querySelectorAll('.choice-btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('blocked');
+                });
+
+                this.blockedChoices.forEach(choice => {
+                    const btn = document.querySelector(`[data-choice="${choice}"]`);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.classList.add('blocked');
+                    }
+                });
+
+                const blockedElement = document.getElementById('blocked-choices');
+                if (this.blockedChoices.length > 0) {
+                    blockedElement.textContent = `Заблокировано: ${this.blockedChoices.map(c => CONFIG.CHOICE_NAMES[c]).join(', ')}`;
+                    blockedElement.classList.remove('hidden');
+                } else {
+                    blockedElement.classList.add('hidden');
+                }
+            }
+
+            renderBuffButtons() {
+                const buffsGrid = document.getElementById('buffs-grid');
+                buffsGrid.innerHTML = '';
+
+                this.availableBuffs.forEach(buff => {
+                    const button = document.createElement('button');
+                    button.className = 'buff-btn';
+                    button.dataset.buff = Object.keys(BUFFS).find(key => BUFFS[key] === buff);
+                    button.textContent = buff.name;
+
+                    if (this.playerBuff === button.dataset.buff) {
+                        button.classList.add('selected');
+                    }
+
+                    button.addEventListener('click', (e) => this.handleBuffSelection(e));
+                    buffsGrid.appendChild(button);
+                });
+
+                if (this.availableBuffs.length > 0) {
+                    const noBuff = document.createElement('button');
+                    noBuff.className = 'no-buff-btn';
+                    noBuff.textContent = 'БЕЗ УСИЛЕНИЯ';
+                    
+                    if (this.playerBuff === null) {
+                        noBuff.classList.add('selected');
+                    }
+
+                    noBuff.addEventListener('click', (e) => this.handleBuffSelection(e));
+                    buffsGrid.appendChild(noBuff);
+                }
+            }
+
+            showNotification(text) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = text;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 3000);
+            }
+
+            showVictoryNotification(title, subtitle) {
+                const notification = document.createElement('div');
+                notification.className = 'notification victory-notification';
+                notification.innerHTML = `
+                    <div class="victory-emoji">🏆</div>
+                    <div class="victory-title">${title}</div>
+                    <div class="victory-subtitle">${subtitle}</div>
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 3000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new Game();
+        });
+    </script>
 </body>
 </html>
