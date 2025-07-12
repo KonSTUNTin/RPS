@@ -220,11 +220,11 @@
             border: 2px solid #ffd700; 
             border-radius: 12px; 
             padding: 20px; 
-            max-width: 500px; 
+            max-width: 600px; 
             width: 90%; 
         }
         .buff-selection-title { font-size: 24px; color: #ffd700; text-align: center; margin-bottom: 15px; }
-        .buff-selection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .buff-selection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
         .buff-selection-btn { 
             padding: 15px 10px; 
             background: #222; 
@@ -238,6 +238,7 @@
             text-transform: uppercase; 
         }
         .buff-selection-btn:hover { transform: translateY(-2px); }
+        .buff-selection-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
         .buff-selection-btn[data-buff="block"] { border-color: #ff6b6b; }
         .buff-selection-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
         .buff-selection-btn[data-buff="chaos"] { border-color: #69db7c; }
@@ -248,6 +249,7 @@
         .buff-selection-btn[data-buff="freeze"] { border-color: #80deea; }
         .buff-selection-btn[data-buff="heal"] { border-color: #a5d6a7; }
         .buff-selection-description { font-size: 11px; color: #ccc; margin-top: 5px; }
+        .buff-selection-controls { text-align: center; }
         
         @keyframes fadeInOut { 
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
@@ -328,6 +330,8 @@
             CHOICE_NAMES: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' },
             CHOICE_ANGLES: { rock: 0, paper: 240, scissors: 120 },
             ENEMY_CHOICE_ANGLES: { rock: 90, paper: -30, scissors: -150 },
+            REWARD_SELECTION_COUNT: 2,
+            REWARD_OPTIONS_COUNT: 5,
             MONSTERS: [
                 { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, 
                 { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' }, { name: 'Тролль', emoji: '🧟' }, 
@@ -358,6 +362,7 @@
                 this.round = 1;
                 this.playerChoice = null;
                 this.selectedBuff = null;
+                this.hoveredBuff = null;
                 this.playerActiveBuffs = [];
                 this.enemyChoice = null;
                 this.blockedChoices = [];
@@ -370,6 +375,7 @@
                 this.currentMonster = CONFIG.MONSTERS[this.startMonsterIndex];
                 this.animationId = null;
                 this.battleDeck = [];
+                this.selectedRewards = [];
             }
 
             init() {
@@ -405,6 +411,18 @@
                     this.selectedBuff = buffType;
                     e.target.classList.add('selected');
                 }
+                this.updateDisplay();
+            }
+
+            handleBuffHover(e) {
+                const buffType = e.target.dataset.buff;
+                this.hoveredBuff = buffType;
+                this.updateDisplay();
+            }
+
+            handleBuffUnhover() {
+                this.hoveredBuff = null;
+                this.updateDisplay();
             }
 
             animateArms(elementId, targetAngle, isThinking = false) {
@@ -625,20 +643,21 @@
             }
 
             showBuffSelectionPopup() {
-                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round);
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round && !BUFFS[key].isHeal);
                 const selectedBuffs = [];
-                while (selectedBuffs.length < 3 && selectedBuffs.length < availableBuffs.filter(key => !BUFFS[key].isHeal).length) {
+                while (selectedBuffs.length < CONFIG.REWARD_OPTIONS_COUNT - 1 && selectedBuffs.length < availableBuffs.length) {
                     const randomBuff = availableBuffs[Math.floor(Math.random() * availableBuffs.length)];
-                    if (!selectedBuffs.includes(randomBuff) && !BUFFS[randomBuff].isHeal) selectedBuffs.push(randomBuff);
+                    if (!selectedBuffs.includes(randomBuff)) selectedBuffs.push(randomBuff);
                 }
-
                 selectedBuffs.push('heal');
+
+                this.selectedRewards = [];
 
                 const popup = document.createElement('div');
                 popup.className = 'buff-selection-popup';
                 popup.innerHTML = `
                     <div class="buff-selection-content">
-                        <div class="buff-selection-title">Выберите награду</div>
+                        <div class="buff-selection-title">Выберите ${CONFIG.REWARD_SELECTION_COUNT} награды</div>
                         <div class="buff-selection-grid">
                             ${selectedBuffs.map(buffKey => {
                                 const buff = BUFFS[buffKey];
@@ -648,21 +667,39 @@
                                 </button>`;
                             }).join('')}
                         </div>
+                        <div class="buff-selection-controls">
+                            <button class="popup-btn" id="take-rewards-btn" disabled>ВЗЯТЬ (0/${CONFIG.REWARD_SELECTION_COUNT})</button>
+                        </div>
                     </div>
                 `;
                 document.body.appendChild(popup);
 
+                const takeBtn = popup.querySelector('#take-rewards-btn');
                 popup.querySelectorAll('.buff-selection-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const buffType = e.currentTarget.dataset.buff;
+                        if (this.selectedRewards.includes(buffType)) {
+                            this.selectedRewards = this.selectedRewards.filter(b => b !== buffType);
+                            btn.classList.remove('selected');
+                        } else if (this.selectedRewards.length < CONFIG.REWARD_SELECTION_COUNT) {
+                            this.selectedRewards.push(buffType);
+                            btn.classList.add('selected');
+                        }
+                        takeBtn.textContent = `ВЗЯТЬ (${this.selectedRewards.length}/${CONFIG.REWARD_SELECTION_COUNT})`;
+                        takeBtn.disabled = this.selectedRewards.length !== CONFIG.REWARD_SELECTION_COUNT;
+                    });
+                });
+
+                takeBtn.addEventListener('click', () => {
+                    this.selectedRewards.forEach(buffType => {
                         if (buffType === 'heal') {
                             this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
                         } else {
                             this.battleDeck.push(buffType);
                         }
-                        document.body.removeChild(popup);
-                        this.nextRound();
                     });
+                    document.body.removeChild(popup);
+                    this.nextRound();
                 });
             }
 
@@ -692,6 +729,7 @@
                 this.phase = 'selecting';
                 this.playerChoice = null;
                 this.selectedBuff = null;
+                this.hoveredBuff = null;
                 this.enemyChoice = null;
                 this.blockedChoices = [];
                 
@@ -726,8 +764,9 @@
                 this.updateActiveBuffs();
                 this.updateBlockedChoices();
                 this.renderBuffButtons();
+                this.updateBuffDescription();
 
-                if (this.playerActiveBuffs.length === 0) {
+                if (this.playerActiveBuffs.length === 0 && !this.hoveredBuff) {
                     document.querySelector('.buffs-area').classList.add('hidden');
                 } else {
                     document.querySelector('.buffs-area').classList.remove('hidden');
@@ -740,6 +779,23 @@
                 } else {
                     makeMoveBtn.disabled = true;
                     makeMoveBtn.classList.remove('active');
+                }
+            }
+
+            updateBuffDescription() {
+                const buffDesc = document.getElementById('buff-desc');
+                const buffTitle = document.getElementById('buff-title');
+                
+                if (this.hoveredBuff) {
+                    const buff = BUFFS[this.hoveredBuff];
+                    buffTitle.textContent = buff.name;
+                    buffDesc.textContent = buff.description;
+                } else if (this.playerActiveBuffs.length > 0) {
+                    buffTitle.textContent = 'Активные усиления';
+                    buffDesc.textContent = '';
+                } else {
+                    buffTitle.textContent = 'Активные усиления';
+                    buffDesc.textContent = '';
                 }
             }
 
@@ -799,6 +855,8 @@
                     }
 
                     button.addEventListener('click', (e) => this.handleBuffSelection(e));
+                    button.addEventListener('mouseenter', (e) => this.handleBuffHover(e));
+                    button.addEventListener('mouseleave', () => this.handleBuffUnhover());
                     buffsGrid.appendChild(button);
                 });
             }
