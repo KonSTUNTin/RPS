@@ -13,13 +13,12 @@
             width: 100%;
             display: grid;
             grid-template-areas:
-                "header header header"
-                "enemy enemy enemy"
+                "header enemy controls"
                 "buffs null controls"
-                "player player player"
+                "buffs player controls"
                 "interface interface interface";
-            grid-template-columns: 1fr 1fr 200px;
-            grid-template-rows: auto auto 1fr auto auto;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto;
             gap: 20px;
             align-items: center;
         }
@@ -28,7 +27,7 @@
         .monster-info { font-size: 14px; color: #ccc; margin-top: 5px; }
         
         .enemy-section { grid-area: enemy; text-align: center; }
-        .buffs-area { grid-area: buffs; text-align: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); min-height: 120px; }
+        .buffs-area {grid-area: buffs;text-align: center;padding: 4px;background: rgba(255, 255, 255, 0.05);border-radius: 8px;border: 1px solid rgba(255, 255, 255, 0.1);min-height: 120px;}
         .player-section { grid-area: player; text-align: center; }
         .game-interface { grid-area: interface; }
         .controls { grid-area: controls; display: flex; flex-direction: column; gap: 10px; }
@@ -38,10 +37,10 @@
         .health-point.health-empty { background: #444; border: 1px solid #666; }
         
         .choice-wheel { width: 120px; height: 120px; position: relative; margin: 0 auto; }
-        .center-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 108px; z-index: 10; }
+        .center-emoji {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);font-size: 88px;z-index: 10;}
         .choice-arms { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(25deg); transition: transform 0.5s ease; }
-        .choice-arm { position: absolute; width: 90px; height: 2px; background: #666; transform-origin: 0 center; }
-        .choice-arm::after { content: attr(data-emoji); position: absolute; right: -15px; top: -15px; text-align: center; transform: translate(0%, -17%) rotate(90deg); font-size: 50px; }
+        .choice-arm {position: absolute;width: 63px;height: 2px;background: #666;transform-origin: 0 center;}
+        .choice-arm::after {content: attr(data-emoji);position: absolute;right: -15px;top: -15px;text-align: center;transform: translate(0%, -17%) rotate(90deg);font-size: 40px;}
         .choice-arm:nth-child(1) { transform: rotate(0deg); }
         .choice-arm:nth-child(2) { transform: rotate(120deg); }
         .choice-arm:nth-child(3) { transform: rotate(240deg); }
@@ -100,7 +99,7 @@
         @keyframes victoryPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
         
         @media (max-width: 768px) {
-            .game-container { 
+            .game-container {
                 /* grid-template-areas: 
                     "header"
                     "enemy"
@@ -108,7 +107,7 @@
                     "player"
                     "interface"
                     "controls"; */
-                grid-template-columns: 1fr;
+                /* grid-template-columns: 1fr; */
                 grid-template-rows: auto auto auto auto auto auto;
             }
             .controls { flex-direction: row; }
