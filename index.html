@@ -1,21 +1,22 @@
+
 <!DOCTYPE html>
 <html lang="ru">
-<head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тактический Камень-Ножницы-Бумага</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        body { font-family: Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0px 20px; }
         .game-container { max-width: 400px; width: 100%; }
-        .header {     display: flex; flex-flow: row; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header {     display: flex; flex-flow: row; justify-content: space-between; align-items: center; }
       
         .round-counter { font-size: 16px; font-weight: bold; color: #ffd700; text-align: right; }
         .monster-info { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; }
         .monster-emoji { font-size: 16px; }
         .monster-name { color: #ccc; }
         .enemy-section, .player-section {text-align: center;/* margin-top: 20px; */}
-        .health-bar { display: flex; justify-content: center; gap: 4px; margin-bottom: 60px; margin-top: 20px; }
+        .health-bar { display: flex; justify-content: center; gap: 4px; margin-bottom: 30px; margin-top: 20px; }
         .health-point { width: 24px; height: 24px; border-radius: 4px; transition: all 0.3s ease; }
         .health-point.health-full { background: #ff4444; box-shadow: 0 0 4px rgba(255, 68, 68, 0.3); }
         .health-point.health-empty { background: #444; border: 1px solid #666; }
@@ -44,7 +45,7 @@
         .buff-duration { background: #ffd700; color: #000; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
 
         .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .choice-btn { padding: 15px; background: linear-gradient(145deg, #666, #555); border: none; border-radius: 8px; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s ease; }
+        .choice-btn { padding: 4px; background: linear-gradient(145deg, #666, #555); border: none; border-radius: 8px; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s ease; }
         .choice-btn:hover { background: linear-gradient(145deg, #777, #666); transform: translateY(-2px); }
         .choice-btn.selected { background: linear-gradient(145deg, #ffd700, #e6c200); color: #000; box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
         .choice-btn:disabled { background: linear-gradient(145deg, #333, #222); opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -53,7 +54,7 @@
         .buff-btn, .no-buff-btn { padding: 12px 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: bold; color: #000; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
         .buff-btn:hover, .no-buff-btn:hover { opacity: 0.85; transform: translateY(-1px); }
         .buff-btn.selected, .no-buff-btn.selected { box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
-        .no-buff-btn { grid-column: 1 / -1; background: linear-gradient(145deg, #555, #444); color: white; }
+        .no-buff-btn {/* grid-column: 1 / -1; */background: linear-gradient(145deg, #555, #444);color: white;}
         .buff-btn[data-buff="block"] { background: linear-gradient(145deg, #ff6b6b, #e55555); }
         .buff-btn[data-buff="tie_damage"] { background: linear-gradient(145deg, #4dabf7, #339af0); }
         .buff-btn[data-buff="chaos"] { background: linear-gradient(145deg, #69db7c, #51cf66); }
@@ -86,18 +87,18 @@
         .victory-emoji { font-size: 24px; margin-bottom: 10px; }
         .victory-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
         .victory-subtitle { font-size: 14px; }
-
+        div#player-health {margin-bottom: 20px;}
         .hidden { display: none !important; }
         .blocked::after { content: '🚫'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; background: rgba(255, 68, 68, 0.9); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
 
         @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
         @keyframes victoryPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-
+        div#enemy-health {margin-top: 0px;}
         @media (max-width: 480px) {
             .choice-wheel { width: 100px; height: 100px; }
-            .center-emoji { font-size: 26px; }
-            .choice-arm::after { font-size: 16px; }
-            .buffs-grid { grid-template-columns: repeat(2, 1fr); }
+            /* .center-emoji { font-size: 26px; }
+            .choice-arm::after { font-size: 16px; } */
+            .buffs-grid {/* grid-template-columns: repeat(2, 1fr); */}
             .health-point { width: 20px; height: 20px; }
         }
     </style>
@@ -105,12 +106,15 @@
 <body>
     <main class="game-container">
         <header class="header">
-       
-            <div class="round-counter">РАУНД <span id="round-number">1</span></div>
-        </header>
+                    РАУНД 1
+                    <div class="monster-info">
+                        <span class="monster-emoji">👹</span>
+                        <span class="monster-name">Гоблин</span>
+                    </div>
+                </header>
 
         <section class="enemy-section">
-            <div class="health-bar" id="enemy-health"></div>
+            <div class="health-bar" id="enemy-health"><div class="health-point health-full"></div></div>
             <div class="choice-wheel enemy-wheel">
                 <div class="center-emoji" id="enemy-center">👹</div>
                 <div class="choice-arms" id="enemy-arms">
@@ -135,7 +139,7 @@
                     <div class="choice-arm" data-emoji="✌️"></div>
                 </div>
             </div>
-            <div class="health-bar" id="player-health"></div>
+            <div class="health-bar" id="player-health"><div class="health-point health-full"></div><div class="health-point health-full"></div><div class="health-point health-full"></div></div>
             <div id="player-active-buffs" class="active-buffs-container"></div>
         </section>
 
@@ -151,9 +155,9 @@
                 <button class="choice-btn" data-choice="scissors">✌️</button>
             </div>
             <div class="buffs-section">
-                <div class="buffs-grid" id="buffs-grid"></div>
+                <div class="buffs-grid" id="buffs-grid"><button class="buff-btn" data-buff="block">Блок</button><button class="buff-btn" data-buff="tie_damage">Ничья+</button><button class="no-buff-btn selected">БЕЗ УСИЛЕНИЯ</button></div>
             </div>
-            <button class="make-move-btn" id="make-move-btn" disabled>СДЕЛАТЬ ХОД</button>
+            <button class="make-move-btn" id="make-move-btn" disabled="">СДЕЛАТЬ ХОД</button>
             <div class="blocked-choices hidden" id="blocked-choices"></div>
         </section>
 
@@ -174,7 +178,7 @@
             PROGRESSION: { PLAYER_BASE_HEALTH: 3, ENEMY_BASE_HEALTH: 1, PLAYER_HEALTH_INCREMENT: 0.5, ENEMY_HEALTH_INCREMENT: 1 },
             MONSTERS: [
                 { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' },
-                { name: 'Тролль', emoji: '🧟' }, { name: 'Вампир', emoji: '🧛' }, { name: 'Зомби', emoji: '🧟‍♂️' }, { name: 'Василиск', emoji: '🐍' }, { name: 'Минотавр', emoji: '🐂' }
+                { name: 'Тролль', emoji: '🧟' }, { name: 'Вампир', emoji: '🧛' }, { name: 'Зомби', emoji: '🧟&zwj;♂️' }, { name: 'Василиск', emoji: '🐍' }, { name: 'Минотавр', emoji: '🐂' }
             ]
         };
 
@@ -626,5 +630,5 @@
             new Game();
         });
     </script>
-</body>
-</html>
+
+</body></html>
