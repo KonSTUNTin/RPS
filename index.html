@@ -18,115 +18,261 @@
                 "buffs player controls"
                 "interface interface interface";
             grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: auto;
             gap: 20px;
             align-items: center;
         }
         
-        .header {grid-area: header;text-align: center;font-size: 18px;flex-flow: row;font-weight: bold;color: #ffd700;}
+        .header { grid-area: header; text-align: center; font-size: 18px; font-weight: bold; color: #ffd700; }
         .monster-info { font-size: 14px; color: #ccc; margin-top: 5px; }
         
-        .enemy-section { grid-area: enemy; text-align: center; }
-        .buffs-area {grid-area: buffs;text-align: center;padding: 4px;background: rgba(255, 255, 255, 0.05);border-radius: 8px;border: 1px solid rgba(255, 255, 255, 0.1);min-height: 120px;}
-        .player-section { grid-area: player; text-align: center; }
+        .enemy-section, .player-section { text-align: center; }
+        .enemy-section { grid-area: enemy; }
+        .player-section { grid-area: player; }
+        
+        .buffs-area { 
+            grid-area: buffs; 
+            text-align: center; 
+            padding: 10px; 
+            background: rgba(255, 255, 255, 0.05); 
+            border-radius: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            min-height: 120px; 
+        }
+        .buffs-area.hidden { display: none; }
+        
         .game-interface { grid-area: interface; }
         .controls { grid-area: controls; display: flex; flex-direction: column; gap: 10px; }
         
-        .health-bar { display: flex; justify-content: center; gap: 4px; margin: 10px 0; }
-        .health-point { width: 24px; height: 24px; border-radius: 4px; background: #ff4444; box-shadow: 0 0 4px rgba(255, 68, 68, 0.3); }
-        .health-point.health-empty { background: #444; border: 1px solid #666; }
+        .health-bar { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
+        .health-point { 
+            font-size: 24px;
+            line-height: 1;
+        }
         
-        .choice-wheel { width: 120px; height: 120px; position: relative; margin: 0 auto; }
-        .center-emoji {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);font-size: 88px;z-index: 10;}
-        .choice-arms { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(25deg); transition: transform 0.5s ease; }
-        .choice-arm {position: absolute;width: 63px;height: 2px;background: #666;transform-origin: 0 center;}
-        .choice-arm::after {content: attr(data-emoji);position: absolute;right: -15px;top: -15px;text-align: center;transform: translate(0%, -17%) rotate(90deg);font-size: 40px;}
+        .choice-wheel { width: 120px; height: 120px; position: relative; margin: 0 auto; transition: transform 0.8s ease; }
+        .choice-wheel.winner { animation: winnerGrow 2s ease-in-out; }
+        .choice-wheel.loser { animation: loserShrink 2s ease-in-out; }
+        .center-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 88px; z-index: 10; }
+        .choice-arms { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            transition: transform 0.5s ease; 
+        }
+        .choice-arm { position: absolute; width: 63px; height: 2px; background: #666; transform-origin: 0 center; }
+        .choice-arm::after { 
+            content: attr(data-emoji); 
+            position: absolute; 
+            right: -15px; 
+            top: -15px; 
+            text-align: center; 
+            transform: translate(0%, -17%) rotate(90deg); 
+            font-size: 40px; 
+        }
         .choice-arm:nth-child(1) { transform: rotate(0deg); }
         .choice-arm:nth-child(2) { transform: rotate(120deg); }
         .choice-arm:nth-child(3) { transform: rotate(240deg); }
-        .choice-arms.selected-rock { transform: translate(-50%, -50%) rotate(-90deg); }
-        .choice-arms.selected-paper { transform: translate(-50%, -50%) rotate(150deg); }
-        .choice-arms.selected-scissors { transform: translate(-50%, -50%) rotate(30deg); }
-        .enemy-wheel .choice-arms.selected-rock { transform: translate(-50%, -50%) rotate(90deg); }
-        .enemy-wheel .choice-arms.selected-paper { transform: translate(-50%, -50%) rotate(-30deg); }
-        .enemy-wheel .choice-arms.selected-scissors { transform: translate(-50%, -50%) rotate(-150deg); }
         
         .buff-title { font-size: 14px; font-weight: bold; color: #ffd700; margin-bottom: 10px; }
         .buff-desc { font-size: 12px; color: #ccc; margin-bottom: 15px; }
         .active-buffs { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
-        .active-buff { background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; border-radius: 4px; padding: 4px 8px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .active-buff { 
+            background: rgba(255, 215, 0, 0.15); 
+            border: 1px solid #ffd700; 
+            border-radius: 4px; 
+            padding: 4px 8px; 
+            font-size: 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+        }
         .buff-name { color: #ffd700; font-weight: bold; }
-        .buff-duration { background: #ffd700; color: #000; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        .buff-duration { 
+            background: #ffd700; 
+            color: #000; 
+            border-radius: 50%; 
+            width: 16px; 
+            height: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            font-weight: bold; 
+        }
         
         .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .choice-btn { padding: 4px; background: linear-gradient(145deg, #666, #555); border: none; border-radius: 8px; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s ease; }
-        .choice-btn:hover { background: linear-gradient(145deg, #777, #666); transform: translateY(-2px); }
-        .choice-btn.selected { background: linear-gradient(145deg, #ffd700, #e6c200); color: #000; box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
-        .choice-btn:disabled { background: linear-gradient(145deg, #333, #222); opacity: 0.5; cursor: not-allowed; transform: none; }
+        .choice-btn { 
+            padding: 20px; 
+            background: #333; 
+            border: 2px solid #666; 
+            border-radius: 8px; 
+            color: white; 
+            font-size: 24px; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+        .choice-btn:hover { border-color: #888; transform: translateY(-2px); }
+        .choice-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
+        .choice-btn:disabled { border-color: #333; opacity: 0.5; cursor: not-allowed; transform: none; }
         
         .buffs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .buff-btn, .no-buff-btn { padding: 12px 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: bold; color: #000; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
-        .buff-btn:hover, .no-buff-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-        .buff-btn.selected, .no-buff-btn.selected { box-shadow: 0 0 0 2px white; transform: translateY(-2px); }
-        .no-buff-btn { background: linear-gradient(145deg, #555, #444); color: white; }
-        .buff-btn[data-buff="block"] { background: linear-gradient(145deg, #ff6b6b, #e55555); }
-        .buff-btn[data-buff="tie_damage"] { background: linear-gradient(145deg, #4dabf7, #339af0); }
-        .buff-btn[data-buff="chaos"] { background: linear-gradient(145deg, #69db7c, #51cf66); }
-        .buff-btn[data-buff="double"] { background: linear-gradient(145deg, #ffd43b, #fab005); }
-        .buff-btn[data-buff="counter"] { background: linear-gradient(145deg, #da77f2, #cc5de8); }
-        .buff-btn[data-buff="shield"] { background: linear-gradient(145deg, #74c0fc, #339af0); }
-        .buff-btn[data-buff="rage"] { background: linear-gradient(145deg, #f06292, #e91e63); }
-        .buff-btn[data-buff="freeze"] { background: linear-gradient(145deg, #80deea, #4dd0e1); }
-        .buff-btn[data-buff="heal"] { background: linear-gradient(145deg, #a5d6a7, #81c784); }
+        .buff-btn, .no-buff-btn { 
+            padding: 12px 6px; 
+            background: #222; 
+            border: 2px solid #666; 
+            border-radius: 6px; 
+            font-size: 10px; 
+            font-weight: bold; 
+            color: #fff; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            text-transform: uppercase; 
+        }
+        .buff-btn:hover, .no-buff-btn:hover { transform: translateY(-1px); }
+        .buff-btn.selected, .no-buff-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
+        .buff-btn[data-buff="block"] { border-color: #ff6b6b; }
+        .buff-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
+        .buff-btn[data-buff="chaos"] { border-color: #69db7c; }
+        .buff-btn[data-buff="double"] { border-color: #ffd43b; }
+        .buff-btn[data-buff="counter"] { border-color: #da77f2; }
+        .buff-btn[data-buff="shield"] { border-color: #74c0fc; }
+        .buff-btn[data-buff="rage"] { border-color: #f06292; }
+        .buff-btn[data-buff="freeze"] { border-color: #80deea; }
+        .buff-btn[data-buff="heal"] { border-color: #a5d6a7; }
         
-        .control-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; font-size: 14px; }
-        .make-move-btn { background: linear-gradient(145deg, #4dabf7, #339af0); }
-        .next-round-btn { background: linear-gradient(145deg, #51cf66, #40c057); }
-        .make-move-btn:hover, .control-btn:hover { transform: translateY(-2px); }
-        .make-move-btn:disabled { background: linear-gradient(145deg, #444, #333); opacity: 0.5; cursor: not-allowed; transform: none; }
-        .controls .control-btn:not(.active) { opacity: 0.3; pointer-events: none; }
+        .control-btn { 
+            width: 100%; 
+            padding: 15px; 
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+            border: 2px solid #007bff; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            text-transform: uppercase; 
+            font-size: 14px; 
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+        .control-btn:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+        .control-btn:disabled { 
+            background: #333; 
+            border-color: #333; 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none;
+        }
+        .controls .control-btn:not(.active) { 
+            background: #333; 
+            border-color: #333; 
+            opacity: 0.3; 
+            pointer-events: none; 
+            box-shadow: none;
+        }
         
-        .popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: #ffd700; padding: 15px 25px; border-radius: 8px; border: 2px solid #ffd700; font-weight: bold; z-index: 1000; animation: fadeInOut 2.5s ease-in-out; text-align: center; }
-        .victory-popup { background: linear-gradient(145deg, rgba(81, 207, 102, 0.95), rgba(64, 192, 87, 0.95)); color: white; padding: 20px 30px; border: 3px solid #51cf66; animation: victoryPulse 3s ease-in-out; }
-        .defeat-popup { background: linear-gradient(145deg, rgba(255, 68, 68, 0.95), rgba(229, 85, 85, 0.95)); color: white; padding: 20px 30px; border: 3px solid #ff4444; }
-        .popup-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .popup { 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(0, 0, 0, 0.95); 
+            color: #ffd700; 
+            padding: 20px 30px; 
+            border-radius: 8px; 
+            border: 2px solid #ffd700; 
+            font-weight: bold; 
+            z-index: 1000; 
+            animation: fadeInOut 2.5s ease-in-out; 
+            text-align: center; 
+        }
+        .victory-popup { border-color: #51cf66; color: #51cf66; }
+        .defeat-popup { border-color: #ff4444; color: #ff4444; }
+        .popup-title { font-size: 18px; margin-bottom: 10px; }
         .popup-text { font-size: 14px; margin-bottom: 15px; }
-        .popup-btn { padding: 10px 20px; background: #4dabf7; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        .popup-btn { 
+            padding: 10px 20px; 
+            background: #333; 
+            border: 2px solid #4dabf7; 
+            border-radius: 4px; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
         
-        .buff-selection-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .buff-selection-content { background: #1a1a1a; border: 2px solid #ffd700; border-radius: 12px; padding: 20px; max-width: 500px; width: 90%; }
+        .buff-selection-popup { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.9); 
+            z-index: 2000; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .buff-selection-content { 
+            background: #1a1a1a; 
+            border: 2px solid #ffd700; 
+            border-radius: 12px; 
+            padding: 20px; 
+            max-width: 500px; 
+            width: 90%; 
+        }
         .buff-selection-title { font-size: 24px; color: #ffd700; text-align: center; margin-bottom: 15px; }
-        .buff-selection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .buff-selection-btn { padding: 15px 10px; border: none; border-radius: 8px; font-size: 12px; font-weight: bold; color: #000; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
-        .buff-selection-btn:hover { transform: translateY(-2px); opacity: 0.9; }
-        .buff-selection-btn[data-buff="block"] { background: linear-gradient(145deg, #ff6b6b, #e55555); }
-        .buff-selection-btn[data-buff="tie_damage"] { background: linear-gradient(145deg, #4dabf7, #339af0); }
-        .buff-selection-btn[data-buff="chaos"] { background: linear-gradient(145deg, #69db7c, #51cf66); }
-        .buff-selection-btn[data-buff="double"] { background: linear-gradient(145deg, #ffd43b, #fab005); }
-        .buff-selection-btn[data-buff="counter"] { background: linear-gradient(145deg, #da77f2, #cc5de8); }
-        .buff-selection-btn[data-buff="shield"] { background: linear-gradient(145deg, #74c0fc, #339af0); }
-        .buff-selection-btn[data-buff="rage"] { background: linear-gradient(145deg, #f06292, #e91e63); }
-        .buff-selection-btn[data-buff="freeze"] { background: linear-gradient(145deg, #80deea, #4dd0e1); }
-        .buff-selection-btn[data-buff="heal"] { background: linear-gradient(145deg, #a5d6a7, #81c784); }
+        .buff-selection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .buff-selection-btn { 
+            padding: 15px 10px; 
+            background: #222; 
+            border: 2px solid; 
+            border-radius: 8px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            color: #fff; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            text-transform: uppercase; 
+        }
+        .buff-selection-btn:hover { transform: translateY(-2px); }
+        .buff-selection-btn[data-buff="block"] { border-color: #ff6b6b; }
+        .buff-selection-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
+        .buff-selection-btn[data-buff="chaos"] { border-color: #69db7c; }
+        .buff-selection-btn[data-buff="double"] { border-color: #ffd43b; }
+        .buff-selection-btn[data-buff="counter"] { border-color: #da77f2; }
+        .buff-selection-btn[data-buff="shield"] { border-color: #74c0fc; }
+        .buff-selection-btn[data-buff="rage"] { border-color: #f06292; }
+        .buff-selection-btn[data-buff="freeze"] { border-color: #80deea; }
+        .buff-selection-btn[data-buff="heal"] { border-color: #a5d6a7; }
         .buff-selection-description { font-size: 11px; color: #ccc; margin-top: 5px; }
         
-        .hidden { display: none !important; }
-        
-        @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-        @keyframes victoryPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-        
-        @media (max-width: 768px) {
-            .game-container {
-                grid-template-rows: auto auto auto auto auto auto;
-            }
-            .controls { flex-direction: row; }
+        @keyframes fadeInOut { 
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+            70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
+        }
+
+        @keyframes winnerGrow {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes loserShrink {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.7); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="header">
-         
             <div class="monster-info">
                 <span id="round-number">1</span>
                 <span id="monster-name">Гоблин</span>
@@ -179,14 +325,14 @@
 
     <script>
         const CONFIG = {
-            MAX_HEALTH: 10,
             CHOICES: ['rock', 'paper', 'scissors'],
-            CHOICE_EMOJIS: { rock: '✊', paper: '✋', scissors: '✌️' },
             CHOICE_NAMES: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' },
-            PROGRESSION: { PLAYER_BASE_HEALTH: 3, ENEMY_BASE_HEALTH: 1, PLAYER_HEALTH_INCREMENT: 0.5, ENEMY_HEALTH_INCREMENT: 1 },
+            CHOICE_ANGLES: { rock: 0, paper: 240, scissors: 120 },
             MONSTERS: [
-                { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' },
-                { name: 'Тролль', emoji: '🧟' }, { name: 'Вампир', emoji: '🧛' }, { name: 'Зомби', emoji: '🧟&zwj;♂️' }, { name: 'Василиск', emoji: '🐍' }, { name: 'Минотавр', emoji: '🐂' }
+                { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, 
+                { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' }, { name: 'Тролль', emoji: '🧟' }, 
+                { name: 'Вампир', emoji: '🧛' }, { name: 'Зомби', emoji: '🧟‍♂️' }, { name: 'Василиск', emoji: '🐍' }, 
+                { name: 'Минотавр', emoji: '🐂' }
             ]
         };
 
@@ -216,23 +362,18 @@
                 this.enemyChoice = null;
                 this.blockedChoices = [];
                 this.phase = 'selecting';
-                this.updateHealthForRound();
-                this.currentMonster = CONFIG.MONSTERS[(this.round - 1) % CONFIG.MONSTERS.length];
-                this.availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
-            }
-
-            updateHealthForRound() {
-                this.playerMaxHealth = Math.round(CONFIG.PROGRESSION.PLAYER_BASE_HEALTH + (this.round - 1) * CONFIG.PROGRESSION.PLAYER_HEALTH_INCREMENT);
-                this.enemyMaxHealth = CONFIG.PROGRESSION.ENEMY_BASE_HEALTH + (this.round - 1) * CONFIG.PROGRESSION.ENEMY_HEALTH_INCREMENT;
-                if (this.playerHealth === undefined) this.playerHealth = this.playerMaxHealth;
-                this.enemyHealth = this.enemyMaxHealth;
-                this.currentMonster = CONFIG.MONSTERS[(this.round - 1) % CONFIG.MONSTERS.length];
+                this.playerMaxHealth = 3;
+                this.playerHealth = 3;
+                this.enemyMaxHealth = 1;
+                this.enemyHealth = 1;
+                this.startMonsterIndex = Math.floor(Math.random() * CONFIG.MONSTERS.length);
+                this.currentMonster = CONFIG.MONSTERS[this.startMonsterIndex];
+                this.animationId = null;
             }
 
             init() {
                 this.setupEventListeners();
                 this.updateDisplay();
-                setTimeout(() => this.showNotification(`${this.currentMonster.emoji} ${this.currentMonster.name} - Ваше ❤️: ${this.playerHealth}/${this.playerMaxHealth}, Враг ❤️: ${this.enemyMaxHealth}`), 500);
             }
 
             setupEventListeners() {
@@ -279,21 +420,91 @@
                 if (!buff) return;
                 document.getElementById('buff-title').textContent = `${buff.name} (${buff.duration} ходов)`;
                 document.getElementById('buff-desc').textContent = buff.description;
+                document.querySelector('.buffs-area').classList.remove('hidden');
             }
 
             clearBuffInfo() {
                 document.getElementById('buff-title').textContent = 'Выберите усиление';
                 document.getElementById('buff-desc').textContent = '';
+                if (!this.playerBuff) {
+                    document.querySelector('.buffs-area').classList.add('hidden');
+                }
+            }
+
+            animateArms(elementId, targetAngle, isThinking = false) {
+                const arms = document.getElementById(elementId);
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                
+                if (isThinking) {
+                    const currentAngle = this.getCurrentAngle(arms);
+                    
+                    // Calculate how many degrees to reach target
+                    let angleDiff = targetAngle - (currentAngle % 360);
+                    if (angleDiff < 0) angleDiff += 360;
+                    
+                    // Add 3-5 full rotations for roulette effect
+                    const extraRotations = 3 + Math.floor(Math.random() * 3);
+                    const finalAngle = currentAngle + extraRotations * 360 + angleDiff;
+                    
+                    const startTime = Date.now();
+                    const duration = 3000; // 3 seconds for full animation
+                    
+                    const animate = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        
+                        // Ease out cubic for smooth deceleration like a real roulette
+                        const eased = 1 - Math.pow(1 - progress, 3);
+                        const angle = currentAngle + (finalAngle - currentAngle) * eased;
+                        
+                        arms.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                        
+                        if (progress < 1) {
+                            this.animationId = requestAnimationFrame(animate);
+                        }
+                    };
+                    animate();
+                } else {
+                    this.animateToTarget(arms, targetAngle);
+                }
+            }
+
+            animateToTarget(arms, targetAngle, startAngle = null) {
+                if (startAngle === null) startAngle = this.getCurrentAngle(arms);
+                const startTime = Date.now();
+                const duration = 800;
+                
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 4); // stronger easing for roulette feel
+                    const currentAngle = startAngle + (targetAngle - startAngle) * eased;
+                    arms.style.transform = `translate(-50%, -50%) rotate(${currentAngle}deg)`;
+                    
+                    if (progress < 1) {
+                        this.animationId = requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+            }
+
+            getCurrentAngle(element) {
+                const transform = element.style.transform;
+                const match = transform.match(/rotate\(([^)]+)deg\)/);
+                return match ? parseFloat(match[1]) : 0;
             }
 
             rotateArms(isPlayer, choice) {
                 const armsId = isPlayer ? 'player-arms' : 'enemy-arms';
-                const arms = document.getElementById(armsId);
                 if (!choice) {
-                    arms.className = 'choice-arms';
+                    document.getElementById(armsId).style.transform = 'translate(-50%, -50%) rotate(0deg)';
                     return;
                 }
-                arms.className = `choice-arms selected-${choice}`;
+                const angle = CONFIG.CHOICE_ANGLES[choice] + (isPlayer ? -90 : 90);
+                this.animateArms(armsId, angle);
             }
 
             makeMove() {
@@ -303,11 +514,16 @@
                 }
                 this.phase = 'reveal';
                 this.updateDisplay();
+                
+                // Generate enemy choice first, then animate to it
+                this.generateEnemyMove();
+                this.animateArms('enemy-arms', CONFIG.CHOICE_ANGLES[this.enemyChoice], true);
+                
                 setTimeout(() => {
-                    this.generateEnemyMove();
+                    this.phase = 'result';
                     this.updateDisplay();
-                    setTimeout(() => this.resolveRound(), 500);
-                }, 2000);
+                    setTimeout(() => this.resolveRound(), 1000);
+                }, 3000);
             }
 
             generateEnemyMove() {
@@ -381,11 +597,25 @@
                     winDamage += this.getBuffModifier('damageBonus');
                     if (this.getBuffModifier('damageBonus') > 0) messages.push('Ярость увеличивает урон!');
                     enemyDamage += winDamage;
+                    
+                    document.querySelector('.player-section .choice-wheel').classList.add('winner');
+                    document.querySelector('.enemy-section .choice-wheel').classList.add('loser');
+                    setTimeout(() => {
+                        document.querySelector('.player-section .choice-wheel').classList.remove('winner');
+                        document.querySelector('.enemy-section .choice-wheel').classList.remove('loser');
+                    }, 2000);
                 } else {
                     messages.push('Враг победил!');
                     playerDamage += 1;
                     enemyDamage += this.getBuffModifier('loseDamageToEnemy');
                     if (this.getBuffModifier('loseDamageToEnemy') > 0) messages.push('Контратака!');
+                    
+                    document.querySelector('.enemy-section .choice-wheel').classList.add('winner');
+                    document.querySelector('.player-section .choice-wheel').classList.add('loser');
+                    setTimeout(() => {
+                        document.querySelector('.enemy-section .choice-wheel').classList.remove('winner');
+                        document.querySelector('.player-section .choice-wheel').classList.remove('loser');
+                    }, 2000);
                 }
 
                 if (playerDamage > 0) {
@@ -409,11 +639,14 @@
                 this.updateDisplay();
                 
                 if (this.playerHealth <= 0) {
-                    this.showDefeatPopup();
+                    setTimeout(() => this.showDefeatPopup(), 1000);
                 } else if (this.enemyHealth <= 0) {
-                    this.showVictoryPopup();
+                    setTimeout(() => this.showVictoryPopup(), 1000);
                 } else {
-                    this.showResultPopup(messages.join(' '));
+                    if (messages.length > 1) {
+                        this.showNotification(messages.slice(1).join(' '));
+                    }
+                    setTimeout(() => this.nextRound(), 2000);
                 }
             }
 
@@ -423,14 +656,9 @@
                 return winConditions[choice1] === choice2 ? 'player' : 'enemy';
             }
 
-            showResultPopup(message) {
-                this.showNotification(message);
-                setTimeout(() => this.nextRound(), 3000);
-            }
-
             showVictoryPopup() {
                 this.showVictoryNotification(`🏆 ${this.currentMonster.emoji} ${this.currentMonster.name} ПОБЕЖДЕН!`, 'Готовьтесь к следующему противнику...');
-                setTimeout(() => this.showBuffSelectionPopup(), 3000);
+                setTimeout(() => this.showBuffSelectionPopup(), 2000);
             }
 
             showBuffSelectionPopup() {
@@ -490,11 +718,10 @@
                 if (this.enemyHealth <= 0) {
                     this.decreaseBuffDurations();
                     this.round++;
-                    this.updateHealthForRound();
-                    this.availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
-                    setTimeout(() => {
-                        this.showNotification(`${this.currentMonster.emoji} ${this.currentMonster.name} - Ваше ❤️: ${this.playerHealth}/${this.playerMaxHealth}, Враг ❤️: ${this.enemyMaxHealth}`);
-                    }, 300);
+                    this.playerMaxHealth = Math.round(3 + (this.round - 1) * 0.5);
+                    this.enemyMaxHealth = 1 + (this.round - 1);
+                    this.enemyHealth = this.enemyMaxHealth;
+                    this.currentMonster = CONFIG.MONSTERS[(this.startMonsterIndex + this.round - 1) % CONFIG.MONSTERS.length];
                 } else {
                     this.decreaseBuffDurations();
                 }
@@ -530,15 +757,21 @@
                     this.rotateArms(false, null);
                 } else if (this.phase === 'reveal') {
                     this.rotateArms(true, this.playerChoice);
-                    this.rotateArms(false, null);
+                    // Don't rotate enemy arms here - animation is already running
                 } else {
                     this.rotateArms(true, this.playerChoice);
-                    this.rotateArms(false, this.enemyChoice);
+                    // Enemy arms already positioned by roulette animation
                 }
 
                 this.updateActiveBuffs();
                 this.updateBlockedChoices();
                 this.renderBuffButtons();
+
+                if (this.playerActiveBuffs.length === 0 && !this.playerBuff) {
+                    document.querySelector('.buffs-area').classList.add('hidden');
+                } else {
+                    document.querySelector('.buffs-area').classList.remove('hidden');
+                }
 
                 const makeMoveBtn = document.getElementById('make-move-btn');
                 if (this.phase === 'selecting') {
@@ -555,7 +788,8 @@
                 element.innerHTML = '';
                 for (let i = 0; i < maxHealth; i++) {
                     const healthPoint = document.createElement('div');
-                    healthPoint.className = `health-point ${i < health ? '' : 'health-empty'}`;
+                    healthPoint.className = 'health-point';
+                    healthPoint.textContent = i < health ? '❤️' : '🖤';
                     element.appendChild(healthPoint);
                 }
             }
@@ -593,7 +827,10 @@
                 const buffsGrid = document.getElementById('buffs-grid');
                 buffsGrid.innerHTML = '';
 
-                this.availableBuffs.forEach(buff => {
+                if (this.playerActiveBuffs.length === 0) return;
+
+                const availableBuffs = Object.values(BUFFS).filter(b => b.unlockRound <= this.round);
+                availableBuffs.forEach(buff => {
                     const button = document.createElement('button');
                     button.className = 'buff-btn';
                     button.dataset.buff = Object.keys(BUFFS).find(key => BUFFS[key] === buff);
@@ -607,7 +844,7 @@
                     buffsGrid.appendChild(button);
                 });
 
-                if (this.availableBuffs.length > 0) {
+                if (availableBuffs.length > 0) {
                     const noBuff = document.createElement('button');
                     noBuff.className = 'no-buff-btn';
                     noBuff.textContent = 'БЕЗ УСИЛЕНИЯ';
