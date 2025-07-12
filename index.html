@@ -6,19 +6,19 @@
     <title>Тактический Камень-Ножницы-Бумага</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        body {font-family: Arial, sans-serif;background: #000;color: #fff;min-height: 100vh;display: flex;justify-content: center;align-items: flex-start;padding: 10px;0px;}
         
         .game-container {
             max-width: 800px;
             width: 100%;
             display: grid;
             grid-template-areas:
-                "header enemy controls"
+                "buffs enemy controls"
                 "buffs null controls"
                 "buffs player controls"
                 "interface interface interface";
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
+            gap: 4px;
             align-items: center;
         }
         
@@ -26,17 +26,17 @@
         .monster-info { font-size: 14px; color: #ccc; margin-top: 5px; }
         
         .enemy-section, .player-section { text-align: center; }
-        .enemy-section { grid-area: enemy; }
+        .enemy-section { grid-area: enemy; margin-bottom: 30px;}
         .player-section { grid-area: player; }
         
-        .buffs-area { 
-            grid-area: buffs; 
-            text-align: center; 
-            padding: 10px; 
-            background: rgba(255, 255, 255, 0.05); 
-            border-radius: 8px; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            min-height: 120px; 
+        .buffs-area {
+            grid-area: buffs;
+            text-align: center;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 120px;
         }
         .buffs-area.hidden { display: none; }
         
@@ -101,7 +101,7 @@
             font-weight: bold; 
         }
         
-        .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .choices-grid {display: grid;grid-template-columns: repeat(3, 1fr);gap: 4px;margin-bottom: 4px;}
         .choice-btn { 
             padding: 20px; 
             background: #333; 
@@ -116,7 +116,7 @@
         .choice-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
         .choice-btn:disabled { border-color: #333; opacity: 0.5; cursor: not-allowed; transform: none; }
         
-        .buffs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .buffs-grid {display: grid;grid-template-columns: repeat(4, 1fr);gap: 4px;margin-bottom: 10px;}
         .buff-btn { 
             padding: 12px 6px; 
             background: #222; 
@@ -140,18 +140,19 @@
         .buff-btn[data-buff="rage"] { border-color: #f06292; }
         .buff-btn[data-buff="freeze"] { border-color: #80deea; }
         
-        .control-btn { 
-            width: 100%; 
-            padding: 15px; 
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
-            border: 2px solid #007bff; 
-            border-radius: 8px; 
-            color: white; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: all 0.3s ease; 
-            text-transform: uppercase; 
-            font-size: 14px; 
+        .control-btn {
+            width: 30vw;
+            height: 30vw;
+            padding: 15px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: 2px solid #007bff;
+            border-radius: 15vw;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 14px;
             box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
         .control-btn:hover { 
@@ -274,13 +275,14 @@
 <body>
     <div class="game-container">
         <div class="header">
+            
+        </div>
+        
+        <div class="enemy-section">
             <div class="monster-info">
                 <span id="round-number">1</span>
                 <span id="monster-name">Гоблин</span>
             </div>
-        </div>
-        
-        <div class="enemy-section">
             <div class="health-bar" id="enemy-health"></div>
             <div class="choice-wheel enemy-wheel">
                 <div class="center-emoji" id="enemy-center">👹</div>
