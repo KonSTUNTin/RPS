@@ -93,6 +93,23 @@
         .popup-text { font-size: 14px; margin-bottom: 15px; }
         .popup-btn { padding: 10px 20px; background: #4dabf7; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
         
+        .buff-selection-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .buff-selection-content { background: #1a1a1a; border: 2px solid #ffd700; border-radius: 12px; padding: 20px; max-width: 500px; width: 90%; }
+        .buff-selection-title { font-size: 24px; color: #ffd700; text-align: center; margin-bottom: 15px; }
+        .buff-selection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .buff-selection-btn { padding: 15px 10px; border: none; border-radius: 8px; font-size: 12px; font-weight: bold; color: #000; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
+        .buff-selection-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .buff-selection-btn[data-buff="block"] { background: linear-gradient(145deg, #ff6b6b, #e55555); }
+        .buff-selection-btn[data-buff="tie_damage"] { background: linear-gradient(145deg, #4dabf7, #339af0); }
+        .buff-selection-btn[data-buff="chaos"] { background: linear-gradient(145deg, #69db7c, #51cf66); }
+        .buff-selection-btn[data-buff="double"] { background: linear-gradient(145deg, #ffd43b, #fab005); }
+        .buff-selection-btn[data-buff="counter"] { background: linear-gradient(145deg, #da77f2, #cc5de8); }
+        .buff-selection-btn[data-buff="shield"] { background: linear-gradient(145deg, #74c0fc, #339af0); }
+        .buff-selection-btn[data-buff="rage"] { background: linear-gradient(145deg, #f06292, #e91e63); }
+        .buff-selection-btn[data-buff="freeze"] { background: linear-gradient(145deg, #80deea, #4dd0e1); }
+        .buff-selection-btn[data-buff="heal"] { background: linear-gradient(145deg, #a5d6a7, #81c784); }
+        .buff-selection-description { font-size: 11px; color: #ccc; margin-top: 5px; }
+        
         .hidden { display: none !important; }
         
         @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
@@ -100,14 +117,6 @@
         
         @media (max-width: 768px) {
             .game-container {
-                /* grid-template-areas: 
-                    "header"
-                    "enemy"
-                    "buffs"
-                    "player"
-                    "interface"
-                    "controls"; */
-                /* grid-template-columns: 1fr; */
                 grid-template-rows: auto auto auto auto auto auto;
             }
             .controls { flex-direction: row; }
@@ -117,9 +126,9 @@
 <body>
     <div class="game-container">
         <div class="header">
-            РАУНД <span id="round-number">1</span>
+         
             <div class="monster-info">
-                <span id="monster-emoji">👹</span>
+                <span id="round-number">1</span>
                 <span id="monster-name">Гоблин</span>
             </div>
         </div>
@@ -190,7 +199,7 @@
             shield: { name: 'Щит', description: 'Уменьшает получаемый урон на 1 (минимум 0).', duration: 3, damageReduction: 1, unlockRound: 4 },
             rage: { name: 'Ярость', description: 'Увеличивает наносимый урон на 1.', duration: 2, damageBonus: 1, unlockRound: 3 },
             freeze: { name: 'Заморозка', description: 'Враг пропускает следующий ход.', duration: 1, freezesEnemy: true, unlockRound: 5 },
-            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', duration: 1, healAmount: 1, unlockRound: 6 }
+            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', duration: 1, healAmount: 1, unlockRound: 1 }
         };
 
         class Game {
@@ -416,14 +425,54 @@
 
             showResultPopup(message) {
                 this.showNotification(message);
-                // Автоматически переходим к следующему раунду через 3 секунды
                 setTimeout(() => this.nextRound(), 3000);
             }
 
             showVictoryPopup() {
                 this.showVictoryNotification(`🏆 ${this.currentMonster.emoji} ${this.currentMonster.name} ПОБЕЖДЕН!`, 'Готовьтесь к следующему противнику...');
-                // Автоматически переходим к следующему раунду через 3 секунды
-                setTimeout(() => this.nextRound(), 3000);
+                setTimeout(() => this.showBuffSelectionPopup(), 3000);
+            }
+
+            showBuffSelectionPopup() {
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round && key !== 'heal');
+                const selectedBuffs = [];
+                while (selectedBuffs.length < 3 && selectedBuffs.length < availableBuffs.length) {
+                    const randomBuff = availableBuffs[Math.floor(Math.random() * availableBuffs.length)];
+                    if (!selectedBuffs.includes(randomBuff)) selectedBuffs.push(randomBuff);
+                }
+
+                selectedBuffs.push('heal');
+
+                const popup = document.createElement('div');
+                popup.className = 'buff-selection-popup';
+                popup.innerHTML = `
+                    <div class="buff-selection-content">
+                        <div class="buff-selection-title">Выберите усиление</div>
+                        <div class="buff-selection-grid">
+                            ${selectedBuffs.map(buffKey => {
+                                const buff = BUFFS[buffKey];
+                                return `<button class="buff-selection-btn" data-buff="${buffKey}">
+                                    <div>${buff.name}</div>
+                                    <div class="buff-selection-description">${buff.description}</div>
+                                </button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(popup);
+
+                popup.querySelectorAll('.buff-selection-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const buffType = e.currentTarget.dataset.buff;
+                        if (buffType === 'heal') {
+                            this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
+                        } else {
+                            this.addBuff(buffType);
+                        }
+                        document.body.removeChild(popup);
+                        this.nextRound();
+                    });
+                });
             }
 
             showDefeatPopup() {
@@ -470,7 +519,6 @@
 
             updateDisplay() {
                 document.getElementById('round-number').textContent = this.round;
-                document.getElementById('monster-emoji').textContent = this.currentMonster.emoji;
                 document.getElementById('monster-name').textContent = this.currentMonster.name;
                 document.getElementById('enemy-center').textContent = this.currentMonster.emoji;
 
@@ -492,7 +540,6 @@
                 this.updateBlockedChoices();
                 this.renderBuffButtons();
 
-                // Управляем активностью кнопки
                 const makeMoveBtn = document.getElementById('make-move-btn');
                 if (this.phase === 'selecting') {
                     makeMoveBtn.disabled = !this.playerChoice;
