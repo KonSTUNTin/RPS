@@ -6,7 +6,7 @@
     <title>Тактический Камень-Ножницы-Бумага</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {font-family: Arial, sans-serif;background: #000;color: #fff;min-height: 100vh;display: flex;justify-content: center;align-items: flex-start;padding: 10px;0px;}
+        body {font-family: Arial, sans-serif;background: #000;color: #fff;min-height: 100vh;display: flex;justify-content: center;align-items: flex-start;padding: 10px;}
         
         .game-container {
             max-width: 800px;
@@ -16,7 +16,8 @@
                 "buffs enemy controls"
                 "buffs null controls"
                 "buffs player controls"
-                "interface interface interface";
+                "interface interface interface"
+                "history history history";
             grid-template-columns: 1fr 1fr 1fr;
             gap: 4px;
             align-items: center;
@@ -42,6 +43,18 @@
         
         .game-interface { grid-area: interface; }
         .controls { grid-area: controls; display: flex; flex-direction: column; gap: 10px; }
+        
+        .battle-history {
+            grid-area: history;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 10px;
+        }
+        .history-title { font-size: 14px; color: #ffd700; margin-bottom: 5px; }
+        .history-emojis { font-size: 20px; line-height: 1; min-height: 25px; }
         
         .health-bar { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
         .health-point { 
@@ -130,15 +143,8 @@
             text-transform: uppercase; 
         }
         .buff-btn:hover { transform: translateY(-1px); }
-        .buff-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
-        .buff-btn[data-buff="block"] { border-color: #ff6b6b; }
-        .buff-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
-        .buff-btn[data-buff="chaos"] { border-color: #69db7c; }
-        .buff-btn[data-buff="double"] { border-color: #ffd43b; }
-        .buff-btn[data-buff="counter"] { border-color: #da77f2; }
-        .buff-btn[data-buff="shield"] { border-color: #74c0fc; }
-        .buff-btn[data-buff="rage"] { border-color: #f06292; }
-        .buff-btn[data-buff="freeze"] { border-color: #80deea; }
+        .buff-btn.selected { transform: translateY(-2px); }
+        .buff-btn.highlighted { transform: translateY(-2px); }
         
         .control-btn {
             width: 30vw;
@@ -239,16 +245,7 @@
             text-transform: uppercase; 
         }
         .buff-selection-btn:hover { transform: translateY(-2px); }
-        .buff-selection-btn.selected { border-color: #ffd700; transform: translateY(-2px); }
-        .buff-selection-btn[data-buff="block"] { border-color: #ff6b6b; }
-        .buff-selection-btn[data-buff="tie_damage"] { border-color: #4dabf7; }
-        .buff-selection-btn[data-buff="chaos"] { border-color: #69db7c; }
-        .buff-selection-btn[data-buff="double"] { border-color: #ffd43b; }
-        .buff-selection-btn[data-buff="counter"] { border-color: #da77f2; }
-        .buff-selection-btn[data-buff="shield"] { border-color: #74c0fc; }
-        .buff-selection-btn[data-buff="rage"] { border-color: #f06292; }
-        .buff-selection-btn[data-buff="freeze"] { border-color: #80deea; }
-        .buff-selection-btn[data-buff="heal"] { border-color: #a5d6a7; }
+        .buff-selection-btn.selected { transform: translateY(-2px); }
         .buff-selection-description { font-size: 11px; color: #ccc; margin-top: 5px; }
         .buff-selection-controls { text-align: center; }
         
@@ -274,9 +271,7 @@
 </head>
 <body>
     <div class="game-container">
-        <div class="header">
-            
-        </div>
+        <div class="header"></div>
         
         <div class="enemy-section">
             <div class="monster-info">
@@ -324,6 +319,11 @@
         <div class="controls">
             <button class="control-btn make-move-btn" id="make-move-btn" disabled>СДЕЛАТЬ ХОД</button>
         </div>
+        
+        <div class="battle-history">
+            <div class="history-title">История побед</div>
+            <div class="history-emojis" id="history-emojis"></div>
+        </div>
     </div>
 
     <script>
@@ -334,6 +334,7 @@
             ENEMY_CHOICE_ANGLES: { rock: 90, paper: -30, scissors: -150 },
             REWARD_SELECTION_COUNT: 2,
             REWARD_OPTIONS_COUNT: 5,
+            STARTING_BUFFS_COUNT: 3,
             MONSTERS: [
                 { name: 'Гоблин', emoji: '👹' }, { name: 'Орк', emoji: '🧌' }, { name: 'Скелет', emoji: '💀' }, 
                 { name: 'Дракон', emoji: '🐉' }, { name: 'Демон', emoji: '😈' }, { name: 'Тролль', emoji: '🧟' }, 
@@ -343,15 +344,18 @@
         };
 
         const BUFFS = {
-            block: { name: 'Блок', description: 'Блокирует один случайный выбор противника в следующем раунде.', duration: 1, blocksEnemyChoice: true, unlockRound: 1 },
-            tie_damage: { name: 'Ничья+', description: 'При ничейном результате вы наносите 1 урон противнику.', duration: 2, tieDamageToEnemy: 1, unlockRound: 1 },
-            chaos: { name: 'Хаос', description: 'Рандомизирует выборы обеих сторон.', duration: 1, randomizesChoices: true, unlockRound: 2 },
-            double: { name: 'x2', description: 'При победе наносите двойной урон (2 вместо 1).', duration: 3, winDamageMultiplier: 2, unlockRound: 3 },
-            counter: { name: 'Контр', description: 'При поражении наносите 1 урон противнику.', duration: 2, loseDamageToEnemy: 1, unlockRound: 2 },
-            shield: { name: 'Щит', description: 'Уменьшает получаемый урон на 1 (минимум 0).', duration: 3, damageReduction: 1, unlockRound: 4 },
-            rage: { name: 'Ярость', description: 'Увеличивает наносимый урон на 1.', duration: 2, damageBonus: 1, unlockRound: 3 },
-            freeze: { name: 'Заморозка', description: 'Враг пропускает следующий ход.', duration: 1, freezesEnemy: true, unlockRound: 5 },
-            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье.', isHeal: true, unlockRound: 1 }
+            tie: { name: 'Ничья', description: 'При ничьей наносите урон, но если монстр выберет ✊ то двойной урон', duration: 1, unlockRound: 1, color: '#ff6b6b' },
+            double: { name: 'Дабл', description: 'Удваивает урон который вы наносите или получаете', duration: 2, unlockRound: 1, color: '#4dabf7' },
+            rust: { name: 'Ржавчина', description: 'Блокирует у противника ✌️, но если он выберет ✊, то снимает двойной урон', duration: 1, unlockRound: 2, color: '#69db7c' },
+            cliff: { name: 'Со скалы', description: 'Если противник выберет камень, то потеряет полностью здоровье, снимает ♥️ у игрока', duration: 1, unlockRound: 3, color: '#ffd43b', textColor: '#000' },
+            triple: { name: 'Трио', description: 'Утраивает урон получаемый и наносимый', duration: 1, unlockRound: 3, color: '#da77f2' },
+            rush: { name: 'Рывок', description: 'Действует 5 ходов, если выигрываешь два раунда подряд, третий автоматически тоже снимает здоровье у противника', duration: 5, unlockRound: 4, color: '#74c0fc' },
+            bet: { name: 'Ставка', description: 'Если монстр выберет ✋ то убьет его, если ✌️ то снимет 3♥️ у игрока', duration: 1, unlockRound: 2, color: '#f06292' },
+            trap: { name: 'Западня', description: 'Если игрок проиграет раунд, то монстр умирает, но в остальных случаях снимает 2♥️ у игрока', duration: 1, unlockRound: 5, color: '#80deea' },
+            revenge: { name: 'Месть', description: 'Действует 3 раунда, если игрок сначала проиграл, а потом победил, то урон увеличивается в 3 раза', duration: 3, unlockRound: 4, color: '#a5d6a7' },
+            fall: { name: 'Падение', description: 'Действует 3 раунда, если монстр сначала победил, а потом проиграл, то при проигрыше урон утраивается', duration: 3, unlockRound: 4, color: '#ffab91' },
+            poison: { name: 'Яд', description: 'Если игрок выигрывает, то приносит ♥️, в ином случае снимает', duration: 2, unlockRound: 3, color: '#ce93d8' },
+            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье', isHeal: true, unlockRound: 1, color: '#a5d6a7' }
         };
 
         class Game {
@@ -378,6 +382,24 @@
                 this.animationId = null;
                 this.battleDeck = [];
                 this.selectedRewards = [];
+                this.battleHistory = [];
+                this.rushWins = 0;
+                this.lastPlayerResult = null;
+                this.lastEnemyResult = null;
+                this.revengeState = [];
+                this.fallState = [];
+                
+                // Add starting random buffs
+                this.addStartingBuffs();
+            }
+
+            addStartingBuffs() {
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= 1 && !BUFFS[key].isHeal);
+                const shuffled = [...availableBuffs].sort(() => Math.random() - 0.5);
+                
+                for (let i = 0; i < Math.min(CONFIG.STARTING_BUFFS_COUNT, shuffled.length); i++) {
+                    this.battleDeck.push(shuffled[i]);
+                }
             }
 
             init() {
@@ -406,12 +428,25 @@
             handleBuffSelection(e) {
                 const buffType = e.target.dataset.buff;
                 if (!buffType) return;
-                document.querySelectorAll('.buff-btn').forEach(b => b.classList.remove('selected'));
+                
+                // Clear all selections first
+                document.querySelectorAll('.buff-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    if (!b.classList.contains('highlighted')) {
+                        b.style.background = '';
+                        b.style.color = '';
+                    }
+                });
+                
                 if (this.selectedBuff === buffType) {
                     this.selectedBuff = null;
                 } else {
                     this.selectedBuff = buffType;
+                    const buff = BUFFS[buffType];
                     e.target.classList.add('selected');
+                    e.target.style.background = buff.color;
+                    e.target.style.borderColor = buff.color;
+                    if (buff.textColor) e.target.style.color = buff.textColor;
                 }
                 this.updateDisplay();
             }
@@ -419,11 +454,36 @@
             handleBuffHover(e) {
                 const buffType = e.target.dataset.buff;
                 this.hoveredBuff = buffType;
+                
+                // Clear all highlighted states
+                document.querySelectorAll('.buff-btn').forEach(btn => {
+                    btn.classList.remove('highlighted');
+                    btn.style.background = '';
+                    btn.style.color = '';
+                });
+                
+                // Highlight hovered buff
+                if (buffType && BUFFS[buffType]) {
+                    const buff = BUFFS[buffType];
+                    e.target.classList.add('highlighted');
+                    e.target.style.background = buff.color;
+                    e.target.style.borderColor = buff.color;
+                    if (buff.textColor) e.target.style.color = buff.textColor;
+                }
+                
                 this.updateDisplay();
             }
 
             handleBuffUnhover() {
                 this.hoveredBuff = null;
+                
+                // Clear all highlighted states
+                document.querySelectorAll('.buff-btn').forEach(btn => {
+                    btn.classList.remove('highlighted');
+                    btn.style.background = '';
+                    btn.style.color = '';
+                });
+                
                 this.updateDisplay();
             }
 
@@ -537,86 +597,201 @@
                 });
             }
 
-            getBuffModifier(property) {
-                return this.playerActiveBuffs.reduce((sum, buff) => sum + (buff[property] || 0), 0);
-            }
-
             hasBuffProperty(property) {
                 return this.playerActiveBuffs.some(buff => buff[property]);
+            }
+
+            getBuff(type) {
+                return this.playerActiveBuffs.find(buff => buff.type === type);
             }
 
             resolveRound() {
                 let finalPlayerChoice = this.playerChoice, finalEnemyChoice = this.enemyChoice, messages = [];
                 
-                if (this.hasBuffProperty('blocksEnemyChoice')) {
-                    const blockedChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
-                    if (finalEnemyChoice === blockedChoice) {
-                        const availableChoices = CONFIG.CHOICES.filter(choice => choice !== blockedChoice);
+                // Rust buff
+                if (this.getBuff('rust')) {
+                    if (finalEnemyChoice === 'scissors') {
+                        const availableChoices = ['rock', 'paper'];
                         finalEnemyChoice = availableChoices[Math.floor(Math.random() * availableChoices.length)];
-                        messages.push(`Блок заблокировал ${CONFIG.CHOICE_NAMES[blockedChoice]}!`);
+                        messages.push('Ржавчина заблокировала ✌️!');
                     }
                 }
-                
-                if (this.hasBuffProperty('randomizesChoices')) {
-                    finalPlayerChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
-                    finalEnemyChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
-                    messages.push('Хаос изменил выборы!');
+
+                // Cliff buff
+                if (this.getBuff('cliff')) {
+                    let cliffDamage = 1;
+                    // Apply double/triple to cliff damage
+                    if (this.getBuff('double')) cliffDamage *= 2;
+                    if (this.getBuff('triple')) cliffDamage *= 3;
+                    
+                    this.playerHealth = Math.max(0, this.playerHealth - cliffDamage);
+                    messages.push(`Со скалы снимает ${cliffDamage}♥️!`);
+                    if (finalEnemyChoice === 'rock') {
+                        this.enemyHealth = 0;
+                        messages.push('Со скалы убивает врага!');
+                        this.battleHistory.push('🌞');
+                        this.phase = 'result';
+                        this.updateDisplay();
+                        this.handleWinnerVisuals('player');
+                        setTimeout(() => this.showVictoryNotification(), 1000);
+                        return;
+                    }
+                    if (this.playerHealth <= 0) {
+                        this.phase = 'result';
+                        this.updateDisplay();
+                        setTimeout(() => this.showDefeatPopup(), 1000);
+                        return;
+                    }
                 }
 
-                if (this.hasBuffProperty('freezesEnemy')) {
-                    finalEnemyChoice = 'rock';
-                    messages.push('Враг заморожен!');
+                // Bet buff
+                if (this.getBuff('bet')) {
+                    if (finalEnemyChoice === 'paper') {
+                        this.enemyHealth = 0;
+                        messages.push('Ставка убивает врага!');
+                        this.battleHistory.push('🌞');
+                        this.phase = 'result';
+                        this.updateDisplay();
+                        this.handleWinnerVisuals('player');
+                        setTimeout(() => this.showVictoryNotification(), 1000);
+                        return;
+                    } else if (finalEnemyChoice === 'scissors') {
+                        let betDamage = 3;
+                        // Apply double/triple to bet damage
+                        if (this.getBuff('double')) betDamage *= 2;
+                        if (this.getBuff('triple')) betDamage *= 3;
+                        
+                        this.playerHealth = Math.max(0, this.playerHealth - betDamage);
+                        messages.push(`Ставка снимает ${betDamage}♥️!`);
+                        this.phase = 'result';
+                        this.updateDisplay();
+                        if (this.playerHealth <= 0) {
+                            setTimeout(() => this.showDefeatPopup(), 1000);
+                            return;
+                        }
+                    }
                 }
 
                 const winner = this.getWinner(finalPlayerChoice, finalEnemyChoice);
                 let playerDamage = 0, enemyDamage = 0;
 
-                if (winner === 'tie') {
-                    messages.push('Ничья!');
-                    enemyDamage += this.getBuffModifier('tieDamageToEnemy');
-                    if (this.getBuffModifier('tieDamageToEnemy') > 0) messages.push('Ничья+ наносит урон!');
-                } else if (winner === 'player') {
-                    messages.push('Вы победили!');
-                    let winDamage = 1;
-                    const winMultiplier = this.getBuffModifier('winDamageMultiplier');
-                    if (winMultiplier > 0) {
-                        winDamage = winMultiplier;
-                        messages.push('Двойной урон!');
+                // Trap buff
+                if (this.getBuff('trap')) {
+                    if (winner === 'enemy') {
+                        this.enemyHealth = 0;
+                        messages.push('Западня убивает врага!');
+                        this.battleHistory.push('🌞');
+                        this.phase = 'result';
+                        this.updateDisplay();
+                        this.handleWinnerVisuals('player');
+                        setTimeout(() => this.showVictoryNotification(), 1000);
+                        return;
+                    } else {
+                        let trapDamage = 2;
+                        // Apply double/triple to trap damage
+                        if (this.getBuff('double')) trapDamage *= 2;
+                        if (this.getBuff('triple')) trapDamage *= 3;
+                        
+                        this.playerHealth = Math.max(0, this.playerHealth - trapDamage);
+                        messages.push(`Западня снимает ${trapDamage}♥️!`);
+                        if (this.playerHealth <= 0) {
+                            this.phase = 'result';
+                            this.updateDisplay();
+                            setTimeout(() => this.showDefeatPopup(), 1000);
+                            return;
+                        }
                     }
-                    winDamage += this.getBuffModifier('damageBonus');
-                    if (this.getBuffModifier('damageBonus') > 0) messages.push('Ярость увеличивает урон!');
-                    enemyDamage += winDamage;
-                    
-                    document.querySelector('.player-section .choice-wheel').classList.add('winner');
-                    document.querySelector('.enemy-section .choice-wheel').classList.add('loser');
-                    setTimeout(() => {
-                        document.querySelector('.player-section .choice-wheel').classList.remove('winner');
-                        document.querySelector('.enemy-section .choice-wheel').classList.remove('loser');
-                    }, 2000);
-                } else {
-                    messages.push('Враг победил!');
-                    playerDamage += 1;
-                    enemyDamage += this.getBuffModifier('loseDamageToEnemy');
-                    if (this.getBuffModifier('loseDamageToEnemy') > 0) messages.push('Контратака!');
-                    
-                    document.querySelector('.enemy-section .choice-wheel').classList.add('winner');
-                    document.querySelector('.player-section .choice-wheel').classList.add('loser');
-                    setTimeout(() => {
-                        document.querySelector('.enemy-section .choice-wheel').classList.remove('winner');
-                        document.querySelector('.player-section .choice-wheel').classList.remove('loser');
-                    }, 2000);
                 }
 
-                if (playerDamage > 0) {
-                    const reduction = this.getBuffModifier('damageReduction');
-                    if (reduction > 0) {
-                        playerDamage = Math.max(0, playerDamage - reduction);
-                        messages.push('Щит защитил!');
+                if (winner === 'tie') {
+                    messages.push('Ничья!');
+                    this.battleHistory.push('⚪');
+                    
+                    // Tie buff
+                    if (this.getBuff('tie')) {
+                        let tieDamage = finalEnemyChoice === 'rock' ? 2 : 1;
+                        enemyDamage += tieDamage;
+                        messages.push(`Ничья наносит ${tieDamage} урон!`);
                     }
+                } else if (winner === 'player') {
+                    messages.push('Вы победили!');
+                    this.battleHistory.push('🌞');
+                    enemyDamage += 1;
+                    
+                    // Rush buff tracking
+                    if (this.getBuff('rush')) {
+                        this.rushWins++;
+                        if (this.rushWins >= 2) {
+                            enemyDamage += 1;
+                            messages.push('Рывок добавляет урон!');
+                            this.rushWins = 0;
+                        }
+                    } else {
+                        this.rushWins = 0;
+                    }
+                    
+                    // Revenge buff
+                    if (this.getBuff('revenge') && this.lastPlayerResult === 'lose') {
+                        enemyDamage *= 3;
+                        messages.push('Месть утраивает урон!');
+                    }
+                    
+                    // Poison buff
+                    if (this.getBuff('poison')) {
+                        this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
+                        messages.push('Яд исцеляет!');
+                    }
+                    
+                    this.handleWinnerVisuals('player');
+                } else {
+                    messages.push('Враг победил!');
+                    this.battleHistory.push(this.currentMonster.emoji);
+                    playerDamage += 1;
+                    
+                    // Rush buff reset
+                    this.rushWins = 0;
+                    
+                    // Fall buff
+                    if (this.getBuff('fall') && this.lastEnemyResult === 'win') {
+                        playerDamage *= 3;
+                        messages.push('Падение утраивает урон!');
+                    }
+                    
+                    // Poison buff
+                    if (this.getBuff('poison')) {
+                        this.playerHealth--;
+                        messages.push('Яд отравляет!');
+                    }
+                    
+                    this.handleWinnerVisuals('enemy');
+                }
+
+                // Rust buff damage
+                if (this.getBuff('rust') && finalEnemyChoice === 'rock') {
+                    playerDamage *= 2;
+                    messages.push('Ржавчина удваивает урон от ✊!');
+                }
+
+                // Double buff
+                if (this.getBuff('double')) {
+                    playerDamage *= 2;
+                    enemyDamage *= 2;
+                    if (playerDamage > 0 || enemyDamage > 0) messages.push('Дабл удваивает урон!');
+                }
+
+                // Triple buff
+                if (this.getBuff('triple')) {
+                    playerDamage *= 3;
+                    enemyDamage *= 3;
+                    if (playerDamage > 0 || enemyDamage > 0) messages.push('Трио утраивает урон!');
                 }
 
                 this.playerHealth = Math.max(0, this.playerHealth - playerDamage);
                 this.enemyHealth = Math.max(0, this.enemyHealth - enemyDamage);
+
+                // Store results for buffs
+                this.lastPlayerResult = winner === 'player' ? 'win' : winner === 'enemy' ? 'lose' : 'tie';
+                this.lastEnemyResult = winner === 'enemy' ? 'win' : winner === 'player' ? 'lose' : 'tie';
 
                 this.phase = 'result';
                 this.updateDisplay();
@@ -633,6 +808,22 @@
                 }
             }
 
+            handleWinnerVisuals(winner) {
+                if (winner === 'player') {
+                    document.querySelector('.player-section .choice-wheel').classList.add('winner');
+                    document.querySelector('.enemy-section .choice-wheel').classList.add('loser');
+                } else {
+                    document.querySelector('.enemy-section .choice-wheel').classList.add('winner');
+                    document.querySelector('.player-section .choice-wheel').classList.add('loser');
+                }
+                setTimeout(() => {
+                    document.querySelector('.player-section .choice-wheel').classList.remove('winner');
+                    document.querySelector('.enemy-section .choice-wheel').classList.remove('loser');
+                    document.querySelector('.enemy-section .choice-wheel').classList.remove('winner');
+                    document.querySelector('.player-section .choice-wheel').classList.remove('loser');
+                }, 2000);
+            }
+
             getWinner(choice1, choice2) {
                 if (choice1 === choice2) return 'tie';
                 const winConditions = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
@@ -646,11 +837,8 @@
 
             showBuffSelectionPopup() {
                 const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round && !BUFFS[key].isHeal);
-                const selectedBuffs = [];
-                while (selectedBuffs.length < CONFIG.REWARD_OPTIONS_COUNT - 1 && selectedBuffs.length < availableBuffs.length) {
-                    const randomBuff = availableBuffs[Math.floor(Math.random() * availableBuffs.length)];
-                    if (!selectedBuffs.includes(randomBuff)) selectedBuffs.push(randomBuff);
-                }
+                const shuffled = [...availableBuffs].sort(() => Math.random() - 0.5);
+                const selectedBuffs = shuffled.slice(0, CONFIG.REWARD_OPTIONS_COUNT - 1);
                 selectedBuffs.push('heal');
 
                 this.selectedRewards = [];
@@ -678,14 +866,24 @@
 
                 const takeBtn = popup.querySelector('#take-rewards-btn');
                 popup.querySelectorAll('.buff-selection-btn').forEach(btn => {
+                    const buff = BUFFS[btn.dataset.buff];
+                    btn.style.borderColor = buff.color;
+                    
                     btn.addEventListener('click', (e) => {
                         const buffType = e.currentTarget.dataset.buff;
+                        const buffData = BUFFS[buffType];
+                        
                         if (this.selectedRewards.includes(buffType)) {
                             this.selectedRewards = this.selectedRewards.filter(b => b !== buffType);
                             btn.classList.remove('selected');
+                            btn.style.background = '';
+                            btn.style.color = '';
                         } else if (this.selectedRewards.length < CONFIG.REWARD_SELECTION_COUNT) {
                             this.selectedRewards.push(buffType);
                             btn.classList.add('selected');
+                            btn.style.background = buffData.color;
+                            btn.style.borderColor = buffData.color;
+                            if (buffData.textColor) btn.style.color = buffData.textColor;
                         }
                         takeBtn.textContent = `ВЗЯТЬ (${this.selectedRewards.length}/${CONFIG.REWARD_SELECTION_COUNT})`;
                         takeBtn.disabled = this.selectedRewards.length !== CONFIG.REWARD_SELECTION_COUNT;
@@ -724,6 +922,10 @@
                     this.enemyMaxHealth = 1 + (this.round - 1);
                     this.enemyHealth = this.enemyMaxHealth;
                     this.currentMonster = CONFIG.MONSTERS[(this.startMonsterIndex + this.round - 1) % CONFIG.MONSTERS.length];
+                    this.battleHistory = [];
+                    this.rushWins = 0;
+                    this.lastPlayerResult = null;
+                    this.lastEnemyResult = null;
                 } else {
                     this.decreaseBuffDurations();
                 }
@@ -767,6 +969,7 @@
                 this.updateBlockedChoices();
                 this.renderBuffButtons();
                 this.updateBuffDescription();
+                this.updateBattleHistory();
 
                 if (this.playerActiveBuffs.length === 0 && !this.hoveredBuff) {
                     document.querySelector('.buffs-area').classList.add('hidden');
@@ -784,11 +987,19 @@
                 }
             }
 
+            updateBattleHistory() {
+                document.getElementById('history-emojis').textContent = this.battleHistory.join(' ');
+            }
+
             updateBuffDescription() {
                 const buffDesc = document.getElementById('buff-desc');
                 const buffTitle = document.getElementById('buff-title');
                 
-                if (this.hoveredBuff) {
+                if (this.selectedBuff) {
+                    const buff = BUFFS[this.selectedBuff];
+                    buffTitle.textContent = `${buff.name} (выбран)`;
+                    buffDesc.textContent = buff.description;
+                } else if (this.hoveredBuff) {
                     const buff = BUFFS[this.hoveredBuff];
                     buffTitle.textContent = buff.name;
                     buffDesc.textContent = buff.description;
@@ -851,9 +1062,12 @@
                     button.className = 'buff-btn';
                     button.dataset.buff = buffKey;
                     button.textContent = buff.name;
+                    button.style.borderColor = buff.color;
 
                     if (this.selectedBuff === buffKey) {
                         button.classList.add('selected');
+                        button.style.background = buff.color;
+                        if (buff.textColor) button.style.color = buff.textColor;
                     }
 
                     button.addEventListener('click', (e) => this.handleBuffSelection(e));
