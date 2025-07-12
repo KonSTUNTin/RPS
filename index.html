@@ -8,13 +8,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .game-container { max-width: 400px; width: 100%; }
-        .header { display: flex; flex-flow: column; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header {     display: flex; flex-flow: row; justify-content: space-between; align-items: center; margin-bottom: 20px; }
       
         .round-counter { font-size: 16px; font-weight: bold; color: #ffd700; text-align: right; }
         .monster-info { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; }
         .monster-emoji { font-size: 16px; }
         .monster-name { color: #ccc; }
-        .enemy-section, .player-section { text-align: center; margin-bottom: 20px; }
+        .enemy-section, .player-section {text-align: center;/* margin-top: 20px; */}
         .health-bar { display: flex; justify-content: center; gap: 4px; margin-bottom: 60px; margin-top: 20px; }
         .health-point { width: 24px; height: 24px; border-radius: 4px; transition: all 0.3s ease; }
         .health-point.health-full { background: #ff4444; box-shadow: 0 0 4px rgba(255, 68, 68, 0.3); }
@@ -35,7 +35,7 @@
         .enemy-wheel .choice-arms.selected-paper { transform: translate(-50%, -50%) rotate(-30deg); }
         .enemy-wheel .choice-arms.selected-scissors { transform: translate(-50%, -50%) rotate(-150deg); }
 
-        .buff-info-section { text-align: center; margin: 20px 0; min-height: 60px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .buff-info-section {text-align: center;width: 140px;position: absolute;/* margin: 20px 0; */min-height: 60px;padding: 10px;background: rgba(255, 255, 255, 0.05);border-radius: 8px;border: 1px solid rgba(255, 255, 255, 0.1);}
         .buff-info-title { font-size: 16px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
         .buff-info-description { font-size: 12px; color: #ccc; }
         .active-buffs-container { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
@@ -63,7 +63,8 @@
         .buff-btn[data-buff="rage"] { background: linear-gradient(145deg, #f06292, #e91e63); }
         .buff-btn[data-buff="freeze"] { background: linear-gradient(145deg, #80deea, #4dd0e1); }
         .buff-btn[data-buff="heal"] { background: linear-gradient(145deg, #a5d6a7, #81c784); }
-
+           
+        section.player-section {margin-top: 100px;}
         .make-move-btn, .next-round-btn, .new-game-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; font-size: 14px; }
         .make-move-btn { background: linear-gradient(145deg, #4dabf7, #339af0); }
         .next-round-btn { background: linear-gradient(145deg, #51cf66, #40c057); }
@@ -474,9 +475,9 @@
             }
 
             updateDisplay() {
-                document.getElementById('round-number').textContent = this.round;
-                document.querySelector('.round-counter').innerHTML = `
-                    РАУНД <span id="round-number">${this.round}</span>
+               
+                document.querySelector('.header').innerHTML = `
+                    РАУНД ${this.round}
                     <div class="monster-info">
                         <span class="monster-emoji">${this.currentMonster.emoji}</span>
                         <span class="monster-name">${this.currentMonster.name}</span>
