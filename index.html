@@ -83,9 +83,6 @@
             transform: translate(0%, -17%) rotate(90deg); 
             font-size: 40px; 
         }
-        .choice-arm:nth-child(1) { transform: rotate(0deg); }
-        .choice-arm:nth-child(2) { transform: rotate(120deg); }
-        .choice-arm:nth-child(3) { transform: rotate(240deg); }
         
         .buff-title { font-size: 14px; font-weight: bold; color: #ffd700; margin-bottom: 10px; }
         .buff-desc { font-size: 12px; color: #ccc; margin-bottom: 15px; }
@@ -149,6 +146,8 @@
         .control-btn {
             width: 30vw;
             height: 30vw;
+            max-width: 120px;
+            max-height: 120px;
             padding: 15px;
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             border: 2px solid #007bff;
@@ -281,11 +280,7 @@
             <div class="health-bar" id="enemy-health"></div>
             <div class="choice-wheel enemy-wheel">
                 <div class="center-emoji" id="enemy-center">👹</div>
-                <div class="choice-arms" id="enemy-arms">
-                    <div class="choice-arm" data-emoji="✊"></div>
-                    <div class="choice-arm" data-emoji="✋"></div>
-                    <div class="choice-arm" data-emoji="✌️"></div>
-                </div>
+                <div class="choice-arms" id="enemy-arms"></div>
             </div>
         </div>
         
@@ -298,21 +293,13 @@
         <div class="player-section">
             <div class="choice-wheel">
                 <div class="center-emoji">🌞</div>
-                <div class="choice-arms" id="player-arms">
-                    <div class="choice-arm" data-emoji="✊"></div>
-                    <div class="choice-arm" data-emoji="✋"></div>
-                    <div class="choice-arm" data-emoji="✌️"></div>
-                </div>
+                <div class="choice-arms" id="player-arms"></div>
             </div>
             <div class="health-bar" id="player-health"></div>
         </div>
         
         <div class="game-interface" id="game-interface">
-            <div class="choices-grid">
-                <button class="choice-btn" data-choice="rock">✊</button>
-                <button class="choice-btn" data-choice="paper">✋</button>
-                <button class="choice-btn" data-choice="scissors">✌️</button>
-            </div>
+            <div class="choices-grid" id="choices-grid"></div>
             <div class="buffs-grid" id="buffs-grid"></div>
         </div>
         
@@ -328,10 +315,8 @@
 
     <script>
         const CONFIG = {
-            CHOICES: ['rock', 'paper', 'scissors'],
             CHOICE_NAMES: { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' },
-            CHOICE_ANGLES: { rock: 0, paper: 240, scissors: 120 },
-            ENEMY_CHOICE_ANGLES: { rock: 90, paper: -30, scissors: -150 },
+            CHOICE_EMOJIS: { rock: '✊', paper: '✋', scissors: '✌️' },
             REWARD_SELECTION_COUNT: 2,
             REWARD_OPTIONS_COUNT: 5,
             STARTING_BUFFS_COUNT: 3,
@@ -355,7 +340,10 @@
             revenge: { name: 'Месть', description: 'Действует 3 раунда, если игрок сначала проиграл, а потом победил, то урон увеличивается в 3 раза', duration: 3, unlockRound: 4, color: '#a5d6a7' },
             fall: { name: 'Падение', description: 'Действует 3 раунда, если монстр сначала победил, а потом проиграл, то при проигрыше урон утраивается', duration: 3, unlockRound: 4, color: '#ffab91' },
             poison: { name: 'Яд', description: 'Если игрок выигрывает, то приносит ♥️, в ином случае снимает', duration: 2, unlockRound: 3, color: '#ce93d8' },
-            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье', isHeal: true, unlockRound: 1, color: '#a5d6a7' }
+            heal: { name: 'Исцеление', description: 'Восстанавливает 1 здоровье', isHeal: true, unlockRound: 1, color: '#a5d6a7' },
+            rock: { name: 'Камень', description: 'Добавляет вам возможность выбрать камень', isChoice: true, choice: 'rock', unlockRound: 1, color: '#8d6e63' },
+            paper: { name: 'Бумага', description: 'Добавляет вам возможность выбрать бумагу', isChoice: true, choice: 'paper', unlockRound: 1, color: '#ffffff', textColor: '#000' },
+            scissors: { name: 'Ножницы', description: 'Добавляет вам возможность выбрать ножницы', isChoice: true, choice: 'scissors', unlockRound: 1, color: '#ff9800' }
         };
 
         class Game {
@@ -388,13 +376,23 @@
                 this.lastEnemyResult = null;
                 this.revengeState = [];
                 this.fallState = [];
+                this.playerChoices = ['rock', 'paper', 'scissors'];
+                this.enemyArms = [];
                 
-                // Add starting random buffs
+                this.generateEnemyArms();
                 this.addStartingBuffs();
             }
 
+            generateEnemyArms() {
+                const armCount = 3 + Math.floor(Math.random() * 8);
+                this.enemyArms = [];
+                for (let i = 0; i < armCount; i++) {
+                    this.enemyArms.push(['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)]);
+                }
+            }
+
             addStartingBuffs() {
-                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= 1 && !BUFFS[key].isHeal);
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= 1 && !BUFFS[key].isHeal && !BUFFS[key].isChoice);
                 const shuffled = [...availableBuffs].sort(() => Math.random() - 0.5);
                 
                 for (let i = 0; i < Math.min(CONFIG.STARTING_BUFFS_COUNT, shuffled.length); i++) {
@@ -408,83 +406,80 @@
             }
 
             setupEventListeners() {
-                document.querySelectorAll('.choice-btn').forEach(btn => btn.addEventListener('click', (e) => this.handleChoiceSelection(e)));
                 document.getElementById('make-move-btn').addEventListener('click', () => this.makeMove());
             }
 
-            handleChoiceSelection(e) {
-                const choice = e.target.dataset.choice;
-                if (this.blockedChoices.includes(choice)) return;
-                document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-                if (this.playerChoice === choice) {
-                    this.playerChoice = null;
-                } else {
-                    this.playerChoice = choice;
-                    e.target.classList.add('selected');
-                }
-                this.updateDisplay();
-            }
-
-            handleBuffSelection(e) {
-                const buffType = e.target.dataset.buff;
-                if (!buffType) return;
+            renderChoiceButtons() {
+                const grid = document.getElementById('choices-grid');
+                grid.innerHTML = '';
                 
-                // Clear all selections first
-                document.querySelectorAll('.buff-btn').forEach(b => {
-                    b.classList.remove('selected');
-                    if (!b.classList.contains('highlighted')) {
-                        b.style.background = '';
-                        b.style.color = '';
+                // Получаем порядок из рук на колесе
+                const playerArms = document.getElementById('player-arms');
+                const arms = Array.from(playerArms.children).sort((a, b) => 
+                    parseInt(a.dataset.index) - parseInt(b.dataset.index)
+                );
+                
+                arms.forEach(arm => {
+                    const choice = arm.dataset.choice;
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.dataset.choice = choice;
+                    btn.textContent = CONFIG.CHOICE_EMOJIS[choice];
+                    if (this.playerChoice === choice) {
+                        btn.classList.add('selected');
                     }
+                    btn.addEventListener('click', (e) => this.handleChoiceSelection(e));
+                    grid.appendChild(btn);
                 });
+            }
+
+            renderArms(elementId, choices) {
+                const container = document.getElementById(elementId);
+                container.innerHTML = '';
                 
-                if (this.selectedBuff === buffType) {
-                    this.selectedBuff = null;
+                if (elementId === 'player-arms' && choices.length >= 3) {
+                    // Для игрока используем фиксированный порядок как в оригинале
+                    const fixedOrder = ['rock', 'paper', 'scissors'];
+                    const angles = [0, 240, 120]; // соответствуют оригинальным углам
+                    
+                    fixedOrder.forEach((choice, index) => {
+                        if (choices.includes(choice)) {
+                            const arm = document.createElement('div');
+                            arm.className = 'choice-arm';
+                            arm.dataset.emoji = CONFIG.CHOICE_EMOJIS[choice];
+                            arm.dataset.choice = choice;
+                            arm.dataset.index = index;
+                            arm.style.transform = `rotate(${angles[index]}deg)`;
+                            container.appendChild(arm);
+                        }
+                    });
+                    
+                    // Добавляем дополнительные варианты выбора равномерно
+                    const extraChoices = choices.filter(c => !fixedOrder.includes(c));
+                    const startAngle = 300; // начинаем после paper
+                    const angleStep = 60 / Math.max(1, extraChoices.length);
+                    extraChoices.forEach((choice, index) => {
+                        const arm = document.createElement('div');
+                        arm.className = 'choice-arm';
+                        arm.dataset.emoji = CONFIG.CHOICE_EMOJIS[choice];
+                        arm.dataset.choice = choice;
+                        arm.dataset.index = fixedOrder.length + index;
+                        arm.style.transform = `rotate(${startAngle + index * angleStep}deg)`;
+                        container.appendChild(arm);
+                    });
                 } else {
-                    this.selectedBuff = buffType;
-                    const buff = BUFFS[buffType];
-                    e.target.classList.add('selected');
-                    e.target.style.background = buff.color;
-                    e.target.style.borderColor = buff.color;
-                    if (buff.textColor) e.target.style.color = buff.textColor;
+                    // Для врага равномерное распределение
+                    const angleStep = 360 / choices.length;
+                    choices.forEach((choice, index) => {
+                        const arm = document.createElement('div');
+                        arm.className = 'choice-arm';
+                        arm.dataset.emoji = CONFIG.CHOICE_EMOJIS[choice];
+                        arm.dataset.choice = choice;
+                        arm.dataset.index = index;
+                        arm.style.transform = `rotate(${index * angleStep}deg)`;
+                        container.appendChild(arm);
+                    });
                 }
-                this.updateDisplay();
-            }
-
-            handleBuffHover(e) {
-                const buffType = e.target.dataset.buff;
-                this.hoveredBuff = buffType;
-                
-                // Clear all highlighted states
-                document.querySelectorAll('.buff-btn').forEach(btn => {
-                    btn.classList.remove('highlighted');
-                    btn.style.background = '';
-                    btn.style.color = '';
-                });
-                
-                // Highlight hovered buff
-                if (buffType && BUFFS[buffType]) {
-                    const buff = BUFFS[buffType];
-                    e.target.classList.add('highlighted');
-                    e.target.style.background = buff.color;
-                    e.target.style.borderColor = buff.color;
-                    if (buff.textColor) e.target.style.color = buff.textColor;
-                }
-                
-                this.updateDisplay();
-            }
-
-            handleBuffUnhover() {
-                this.hoveredBuff = null;
-                
-                // Clear all highlighted states
-                document.querySelectorAll('.buff-btn').forEach(btn => {
-                    btn.classList.remove('highlighted');
-                    btn.style.background = '';
-                    btn.style.color = '';
-                });
-                
-                this.updateDisplay();
             }
 
             animateArms(elementId, targetAngle, isThinking = false) {
@@ -552,9 +547,92 @@
                     document.getElementById(armsId).style.transform = 'translate(-50%, -50%) rotate(0deg)';
                     return;
                 }
-                const angles = isPlayer ? CONFIG.CHOICE_ANGLES : CONFIG.ENEMY_CHOICE_ANGLES;
-                const angle = angles[choice] + (isPlayer ? -90 : 0);
-                this.animateArms(armsId, angle);
+                
+                // Находим руку с нужным выбором и получаем её угол
+                const armsContainer = document.getElementById(armsId);
+                const targetArm = Array.from(armsContainer.children).find(arm => arm.dataset.choice === choice);
+                
+                if (targetArm) {
+                    const transform = targetArm.style.transform;
+                    const match = transform.match(/rotate\(([^)]+)deg\)/);
+                    if (match) {
+                        const armAngle = parseFloat(match[1]);
+                        const finalAngle = armAngle + (isPlayer ? -90 : 0);
+                        this.animateArms(armsId, finalAngle);
+                    }
+                }
+            }
+
+            handleChoiceSelection(e) {
+                const choice = e.target.dataset.choice;
+                if (this.blockedChoices.includes(choice)) return;
+                
+                if (this.playerChoice === choice) {
+                    this.playerChoice = null;
+                    this.rotateArms(true, null);
+                } else {
+                    this.playerChoice = choice;
+                    this.rotateArms(true, choice);
+                }
+                this.updateDisplay();
+            }
+
+            handleBuffSelection(e) {
+                const buffType = e.target.dataset.buff;
+                if (!buffType) return;
+                
+                document.querySelectorAll('.buff-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    if (!b.classList.contains('highlighted')) {
+                        b.style.background = '';
+                        b.style.color = '';
+                    }
+                });
+                
+                if (this.selectedBuff === buffType) {
+                    this.selectedBuff = null;
+                } else {
+                    this.selectedBuff = buffType;
+                    const buff = BUFFS[buffType];
+                    e.target.classList.add('selected');
+                    e.target.style.background = buff.color;
+                    e.target.style.borderColor = buff.color;
+                    if (buff.textColor) e.target.style.color = buff.textColor;
+                }
+                this.updateDisplay();
+            }
+
+            handleBuffHover(e) {
+                const buffType = e.target.dataset.buff;
+                this.hoveredBuff = buffType;
+                
+                document.querySelectorAll('.buff-btn').forEach(btn => {
+                    btn.classList.remove('highlighted');
+                    btn.style.background = '';
+                    btn.style.color = '';
+                });
+                
+                if (buffType && BUFFS[buffType]) {
+                    const buff = BUFFS[buffType];
+                    e.target.classList.add('highlighted');
+                    e.target.style.background = buff.color;
+                    e.target.style.borderColor = buff.color;
+                    if (buff.textColor) e.target.style.color = buff.textColor;
+                }
+                
+                this.updateDisplay();
+            }
+
+            handleBuffUnhover() {
+                this.hoveredBuff = null;
+                
+                document.querySelectorAll('.buff-btn').forEach(btn => {
+                    btn.classList.remove('highlighted');
+                    btn.style.background = '';
+                    btn.style.color = '';
+                });
+                
+                this.updateDisplay();
             }
 
             makeMove() {
@@ -566,7 +644,7 @@
                 this.updateDisplay();
                 
                 this.generateEnemyMove();
-                this.animateArms('enemy-arms', CONFIG.ENEMY_CHOICE_ANGLES[this.enemyChoice], true);
+                this.animateArms('enemy-arms', this.getEnemyChoiceAngle(), true);
                 
                 setTimeout(() => {
                     this.phase = 'result';
@@ -575,13 +653,36 @@
                 }, 3000);
             }
 
+            getEnemyChoiceAngle() {
+                const choiceIndex = this.enemyArms.indexOf(this.enemyChoice);
+                const angleStep = 360 / this.enemyArms.length;
+                
+                if (this.enemyArms.length === 3) {
+                    // Используем оригинальные углы для 3 рук
+                    const originalAngles = { rock: 90, paper: -30, scissors: -150 };
+                    return originalAngles[this.enemyChoice] || (choiceIndex * angleStep);
+                } else {
+                    // Для других количеств рук - равномерно распределяем
+                    return choiceIndex * angleStep;
+                }
+            }
+
             generateEnemyMove() {
-                this.enemyChoice = CONFIG.CHOICES[Math.floor(Math.random() * CONFIG.CHOICES.length)];
+                this.enemyChoice = this.enemyArms[Math.floor(Math.random() * this.enemyArms.length)];
             }
 
             addBuffToDeck(buffType) {
                 const buff = BUFFS[buffType];
-                if (!buff || buff.isHeal) return;
+                if (!buff) return;
+                
+                if (buff.isHeal) return;
+                if (buff.isChoice) {
+                    if (!this.playerChoices.includes(buff.choice)) {
+                        this.playerChoices.push(buff.choice);
+                    }
+                    return;
+                }
+                
                 const existingIndex = this.playerActiveBuffs.findIndex(b => b.type === buffType);
                 if (existingIndex >= 0) {
                     this.playerActiveBuffs[existingIndex].duration = buff.duration;
@@ -608,7 +709,6 @@
             resolveRound() {
                 let finalPlayerChoice = this.playerChoice, finalEnemyChoice = this.enemyChoice, messages = [];
                 
-                // Rust buff
                 if (this.getBuff('rust')) {
                     if (finalEnemyChoice === 'scissors') {
                         const availableChoices = ['rock', 'paper'];
@@ -617,10 +717,8 @@
                     }
                 }
 
-                // Cliff buff
                 if (this.getBuff('cliff')) {
                     let cliffDamage = 1;
-                    // Apply double/triple to cliff damage
                     if (this.getBuff('double')) cliffDamage *= 2;
                     if (this.getBuff('triple')) cliffDamage *= 3;
                     
@@ -644,7 +742,6 @@
                     }
                 }
 
-                // Bet buff
                 if (this.getBuff('bet')) {
                     if (finalEnemyChoice === 'paper') {
                         this.enemyHealth = 0;
@@ -657,7 +754,6 @@
                         return;
                     } else if (finalEnemyChoice === 'scissors') {
                         let betDamage = 3;
-                        // Apply double/triple to bet damage
                         if (this.getBuff('double')) betDamage *= 2;
                         if (this.getBuff('triple')) betDamage *= 3;
                         
@@ -675,7 +771,6 @@
                 const winner = this.getWinner(finalPlayerChoice, finalEnemyChoice);
                 let playerDamage = 0, enemyDamage = 0;
 
-                // Trap buff
                 if (this.getBuff('trap')) {
                     if (winner === 'enemy') {
                         this.enemyHealth = 0;
@@ -688,7 +783,6 @@
                         return;
                     } else {
                         let trapDamage = 2;
-                        // Apply double/triple to trap damage
                         if (this.getBuff('double')) trapDamage *= 2;
                         if (this.getBuff('triple')) trapDamage *= 3;
                         
@@ -707,7 +801,6 @@
                     messages.push('Ничья!');
                     this.battleHistory.push('⚪');
                     
-                    // Tie buff
                     if (this.getBuff('tie')) {
                         let tieDamage = finalEnemyChoice === 'rock' ? 2 : 1;
                         enemyDamage += tieDamage;
@@ -718,7 +811,6 @@
                     this.battleHistory.push('🌞');
                     enemyDamage += 1;
                     
-                    // Rush buff tracking
                     if (this.getBuff('rush')) {
                         this.rushWins++;
                         if (this.rushWins >= 2) {
@@ -730,13 +822,11 @@
                         this.rushWins = 0;
                     }
                     
-                    // Revenge buff
                     if (this.getBuff('revenge') && this.lastPlayerResult === 'lose') {
                         enemyDamage *= 3;
                         messages.push('Месть утраивает урон!');
                     }
                     
-                    // Poison buff
                     if (this.getBuff('poison')) {
                         this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
                         messages.push('Яд исцеляет!');
@@ -748,16 +838,13 @@
                     this.battleHistory.push(this.currentMonster.emoji);
                     playerDamage += 1;
                     
-                    // Rush buff reset
                     this.rushWins = 0;
                     
-                    // Fall buff
                     if (this.getBuff('fall') && this.lastEnemyResult === 'win') {
                         playerDamage *= 3;
                         messages.push('Падение утраивает урон!');
                     }
                     
-                    // Poison buff
                     if (this.getBuff('poison')) {
                         this.playerHealth--;
                         messages.push('Яд отравляет!');
@@ -766,20 +853,17 @@
                     this.handleWinnerVisuals('enemy');
                 }
 
-                // Rust buff damage
                 if (this.getBuff('rust') && finalEnemyChoice === 'rock') {
                     playerDamage *= 2;
                     messages.push('Ржавчина удваивает урон от ✊!');
                 }
 
-                // Double buff
                 if (this.getBuff('double')) {
                     playerDamage *= 2;
                     enemyDamage *= 2;
                     if (playerDamage > 0 || enemyDamage > 0) messages.push('Дабл удваивает урон!');
                 }
 
-                // Triple buff
                 if (this.getBuff('triple')) {
                     playerDamage *= 3;
                     enemyDamage *= 3;
@@ -789,7 +873,6 @@
                 this.playerHealth = Math.max(0, this.playerHealth - playerDamage);
                 this.enemyHealth = Math.max(0, this.enemyHealth - enemyDamage);
 
-                // Store results for buffs
                 this.lastPlayerResult = winner === 'player' ? 'win' : winner === 'enemy' ? 'lose' : 'tie';
                 this.lastEnemyResult = winner === 'enemy' ? 'win' : winner === 'player' ? 'lose' : 'tie';
 
@@ -836,10 +919,9 @@
             }
 
             showBuffSelectionPopup() {
-                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round && !BUFFS[key].isHeal);
+                const availableBuffs = Object.keys(BUFFS).filter(key => BUFFS[key].unlockRound <= this.round);
                 const shuffled = [...availableBuffs].sort(() => Math.random() - 0.5);
-                const selectedBuffs = shuffled.slice(0, CONFIG.REWARD_OPTIONS_COUNT - 1);
-                selectedBuffs.push('heal');
+                const selectedBuffs = shuffled.slice(0, CONFIG.REWARD_OPTIONS_COUNT);
 
                 this.selectedRewards = [];
 
@@ -895,7 +977,7 @@
                         if (buffType === 'heal') {
                             this.playerHealth = Math.min(this.playerMaxHealth, this.playerHealth + 1);
                         } else {
-                            this.battleDeck.push(buffType);
+                            this.addBuffToDeck(buffType);
                         }
                     });
                     document.body.removeChild(popup);
@@ -926,6 +1008,7 @@
                     this.rushWins = 0;
                     this.lastPlayerResult = null;
                     this.lastEnemyResult = null;
+                    this.generateEnemyArms();
                 } else {
                     this.decreaseBuffDurations();
                 }
@@ -956,14 +1039,9 @@
                 this.updateHealthBar('player-health', this.playerHealth, this.playerMaxHealth);
                 this.updateHealthBar('enemy-health', this.enemyHealth, this.enemyMaxHealth);
 
-                if (this.phase === 'selecting') {
-                    this.rotateArms(true, this.playerChoice);
-                    this.rotateArms(false, null);
-                } else if (this.phase === 'reveal') {
-                    this.rotateArms(true, this.playerChoice);
-                } else {
-                    this.rotateArms(true, this.playerChoice);
-                }
+                this.renderArms('player-arms', this.playerChoices);
+                this.renderArms('enemy-arms', this.enemyArms);
+                this.renderChoiceButtons();
 
                 this.updateActiveBuffs();
                 this.updateBlockedChoices();
